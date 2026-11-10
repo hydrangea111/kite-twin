@@ -117,7 +117,9 @@ pre.cmd .c{color:#8fb0d6}
 text .t1{font:700 13.5px var(--sans);fill:#1c2b3d}
 text .t2{font:500 11.5px var(--sans);fill:#5b6f88}
 .fn.on .t1,.fn.on .t2{fill:#fff}
+text .t1.mono{font-family:var(--mono);font-size:12.5px}
 .sd text .t1{font-size:12px;font-weight:600;fill:#3b4f69}
+.sd text .t2{font-size:10.5px}
 .ar{fill:none;stroke:#6b84a3;stroke-width:1.6;marker-end:url(#ah)}
 .fl-lab{font:700 11.5px var(--sans);fill:#52657d}
 .fstep{display:none;margin-top:10px;padding:10px 12px;background:#eef5ff;border:1px solid #c9dcf8;border-radius:8px;font-size:14px;line-height:1.65;color:#1c2b3d}
@@ -489,97 +491,49 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     return render(root, 0, false);
   }
 
-  // ---- 순서도 ----
-  // s: 도형 안 제목, g: 한 줄 목적, w/y: 단계를 눌렀을 때 보여 줄 자세한 설명(하는 일 / 왜)
+  // ---- 코드 블록 순서도 ----
+  // 상자 하나 = 코드 블록 하나(함수·메서드, 또는 파일 전체).
+  // l, e: 블록의 시작·끝 줄. 파일 전체가 블록이면 생략하고, 그 경우 코드는 강조하지 않는다.
+  // w: 하는 일,  y: WHY?(왜 이 블록이 필요한가)
   var FLOWS = {
-    ground: {
-      name: "지상국",
-      goal: "센서값을 연의 실제 상태로 바로잡는다 (수신한 행마다 1회)",
+    main: {
+      name: "코드 블록 순서도",
+      goal: "연이 보낸 측정값이 화면과 기록으로 가기까지, 코드 블록의 실행 순서",
       nodes: [
-        {t:"start", s:"센서 한 행 수신", p:"station/bridge.py", l:559,
-          w:"줄 길이, 장력, 고도각, 풍속 등 원시 채널을 읽는다.",
-          y:"실물 장치, 기록 파일, 시뮬레이터 어느 쪽에서 오더라도 같은 형식으로 받아 이후 계산을 한 벌로 쓰기 위해서다."},
-        {t:"proc", s:"줄 늘어남 보정", g:"연은 줄 길이보다 더 멀리 있다", p:"station/bridge.py", l:313,
-          w:"실제 거리 r = L × (1 + T/EA) 를 구한다.",
-          y:"엔코더는 늘어나지 않은 줄 길이만 잰다. 장력이 걸리면 줄이 늘어나 연은 그보다 멀리 있다."},
-        {t:"proc", s:"처짐각 계산", g:"줄이 처져 센서 각도가 낮다", p:"station/bridge.py", l:326,
-          w:"줄 자체 무게 때문에 생기는 처짐각을 구한다.",
-          y:"지상 각도 센서는 줄 끝의 접선 방향을 읽는다. 연이 실제로 있는 방향은 그보다 높다."},
-        {t:"dec", s:"처짐각이\n정상 범위 안인가?", side:"상한으로 자르고\n‘신뢰 불가’ 표시", p:"station/bridge.py", l:330,
-          w:"줄이 느슨하면 처짐각이 한없이 커지므로 상한을 넘는지 확인한다.",
-          y:"처짐 보정은 장력에 반비례해서 장력이 0.01 N이면 1151°가 나온다. 이런 값은 화면에 그대로 나가면 안 된다."},
-        {t:"proc", s:"연 위치 (x, z) 계산", g:"보정 효과를 눈으로 확인", p:"station/bridge.py", l:332,
-          w:"보정한 거리와 현 각도로 연의 수평·수직 위치를 구한다.",
-          y:"보정하지 않은 위치와 나란히 보여 주어, 각 보정이 실제로 몇 cm를 바꾸는지 확인하게 한다."},
-        {t:"proc", s:"CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"station/bridge.py", l:340,
-          w:"측정한 장력·각도·풍속을 힘의 평형식에 넣어 양력·항력계수를 구한다.",
-          y:"계수는 직접 잴 수 없다. 대신 그 결과로 나타나는 장력과 각도는 잴 수 있다."},
-        {t:"dec", s:"믿고 쓸 수 있는\n표본인가?", side:"이번 행은\n추정에서 제외", p:"station/bridge.py", l:344,
-          w:"연이 안정된 상태이고, 줄이 팽팽하며, 처짐 보정이 유효한지 확인한다.",
-          y:"연이 가속하는 중에는 힘의 평형식이 성립하지 않는다. 그때의 역산값은 흔들리는 값이 아니라 틀린 값이다."},
-        {t:"proc", s:"추정값 갱신", g:"중앙값으로 튀는 값 방어", p:"station/bridge.py", l:346,
-          w:"최근 표본 200개의 중앙값을 CL, CD의 추정값으로 삼는다.",
-          y:"평균은 튀는 값 하나에 끌려가지만 중앙값은 그렇지 않다."},
-        {t:"proc", s:"모형 예측과 비교", g:"모형이 맞는지 실시간 점검", p:"station/bridge.py", l:358,
-          w:"같은 풍속과 줄 길이에서 모형이 말하는 위치·장력을 구해 실측과의 차이를 계산한다.",
-          y:"모형이 현실과 얼마나 맞는지를 비행 중에 바로 확인하기 위해서다."},
-        {t:"end", s:"브라우저로 송출", g:"다음 행으로 되풀이", p:"station/bridge.py", l:258,
-          w:"계산 결과를 SSE로 브라우저에 내보낸다.",
-          y:"텔레메트리는 한 방향으로만 흐르므로 WebSocket 대신 단순한 SSE를 쓰고, 브라우저는 끊겨도 스스로 다시 연결한다."}
-      ]
-    },
-    sim: {
-      name: "시뮬레이션",
-      goal: "연의 움직임과 줄 장력을 시간순으로 계산한다 (비행 1회)",
-      nodes: [
-        {t:"start", s:"입력 준비", g:"줄 강성만 바꿔 비교하려고", p:"sim/params.py", l:1,
-          w:"연·줄·탑재물의 물리 상수, 바람장, 초기 상태를 정한다.",
-          y:"줄 강성만 바꿔 같은 조건에서 비교해야 하므로, 모든 값을 입력으로 분리해 두었다."},
-        {t:"proc", s:"줄 장력 계산", g:"늘어난 만큼 당기는 힘", p:"sim/model.py", l:148,
-          w:"줄이 늘어난 길이에 비례하는 힘과 감쇠력을 더한다. 줄이 느슨하면 0이다.",
-          y:"줄은 당기기만 할 뿐 밀지 못한다. 연구의 핵심 변수인 줄의 탄성이 여기에 들어간다."},
-        {t:"proc", s:"공기력 계산", g:"상대 풍속으로 양력·항력", p:"sim/model.py", l:150,
-          w:"바람에 대한 연의 상대 속도로 양력과 항력을 구한다.",
-          y:"연이 움직이면 맞바람의 속도가 달라지므로 매 순간 다시 계산해야 한다."},
-        {t:"proc", s:"힘 합치기", g:"공기력 + 줄 항력 + 중력 − 장력", p:"sim/model.py", l:154,
-          w:"연에 작용하는 합력을 구한다.",
-          y:"줄은 높이에 따라 바람이 다르므로, 줄 항력은 줄 중간 높이의 바람으로 계산한다."},
-        {t:"proc", s:"가속도 계산", g:"캔버스는 공기를 끌고 움직인다", p:"sim/model.py", l:164,
-          w:"캔버스에 수직인 방향과 나란한 방향에 서로 다른 질량을 적용한다.",
-          y:"연은 넓은 면이라 수직으로 움직일 때 주변 공기를 함께 끌고 간다. 이를 무시하면 반응이 실제보다 빠르게 나온다."},
-        {t:"proc", s:"0.1 s 이내로 한 걸음", g:"돌풍을 건너뛰지 않으려고", p:"sim/model.py", l:337,
-          w:"Radau 적분기로 위치와 속도를 갱신한다. 한 걸음은 0.1 s를 넘기지 않는다.",
-          y:"돌풍은 짧아서 적분기가 보폭을 크게 잡으면 통째로 건너뛴다. 실제로 돌풍을 놓치고 정상 장력을 피크로 낸 사례가 있었다."},
-        {t:"dec", s:"종료 시각에\n도달했는가?", side:"장력 계산으로\n되돌아감", loop:1, p:"sim/model.py", l:339,
-          w:"현재 시각과 종료 시각을 비교한다.",
-          y:"한 걸음마다 새 위치에서 힘을 다시 계산해야 하므로 끝날 때까지 되풀이한다."},
-        {t:"end", s:"장력·고도각 정리", g:"결과를 분석에 넘김", p:"sim/model.py", l:356,
-          w:"각 시각의 위치·속도로 장력과 고도각을 구해 한꺼번에 돌려준다.",
-          y:"분석 스크립트가 같은 형식의 결과를 받아 피크 장력, 진동 등을 계산한다."}
-      ]
-    },
-    twin: {
-      name: "계수 교정",
-      goal: "실제 비행 기록으로 양력·항력계수의 가정값을 교체한다",
-      nodes: [
-        {t:"start", s:"비행 기록 입력", g:"가정값 대신 실측 사용", p:"sim/twin.py", l:234,
-          w:"시각, 줄 길이, 장력, 고도각, 풍속의 시계열을 받는다.",
-          y:"가정값 대신 실측에서 계수를 얻기 위해서다."},
-        {t:"proc", s:"안정된 구간만 선별", g:"가속·느슨한 구간은 제외", p:"sim/twin.py", l:148,
-          w:"장력과 고도각의 변화가 느리고, 줄이 팽팽하며, 처짐 보정이 유효한 행만 남긴다.",
-          y:"역산에 쓰는 힘의 평형식은 연이 가속하지 않을 때만 맞는다. 줄이 느슨한 구간은 CD가 음수로 나올 만큼 틀린다."},
-        {t:"dec", s:"표본이 50개\n이상인가?", side:"오류로 종료", stop:true, p:"sim/twin.py", l:237,
-          w:"고른 행의 개수를 센다.",
-          y:"표본이 너무 적으면 어떤 계수를 내놓아도 믿을 수 없다."},
-        {t:"proc", s:"표본별 CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"sim/twin.py", l:204,
-          w:"처짐을 되돌리고 줄 항력을 뺀 뒤, 남은 힘을 연에 작용하는 공기력으로 보고 계수를 구한다.",
-          y:"측정한 장력과 각도가 곧 공기력의 크기와 방향을 알려 주기 때문이다."},
-        {t:"proc", s:"2000회 다시 뽑기", g:"결과의 불확실성 측정", p:"sim/twin.py", l:247,
-          w:"표본을 복원추출로 2000번 다시 뽑고, 그때마다 중앙값을 구한다.",
-          y:"표본 수가 한정되어 있으므로, 결과가 표본 선택에 따라 얼마나 흔들리는지 알아야 값을 얼마나 믿을지 말할 수 있다."},
-        {t:"end", s:"CL·CD, 95 % 구간", g:"모형의 가정값을 교체", p:"sim/twin.py", l:251,
-          w:"중앙값과 2.5 %–97.5 % 구간을 돌려준다.",
-          y:"이 값으로 모형의 가정값을 교체한다."}
+        {t:"start", s:"공중 노드 펌웨어", g:"측정 후 ESP-NOW로 송신", p:"firmware/payload/src/main.cpp",
+          w:"IMU 자세, GPS, 발전량을 읽어 패킷으로 묶고 지상 노드에 무선으로 보낸다.",
+          y:"떠 있는 연과 지상을 잇는 통로가 무선뿐이다. 두 노드는 같은 패킷 정의(telemetry.h)를 공유한다."},
+        {t:"proc", s:"지상 노드 펌웨어", g:"수신 후 CSV 한 줄로 출력", p:"firmware/ground/src/main.cpp",
+          w:"수신한 패킷에 지상 측정값(장력·각도·풍속)을 붙여 28열 CSV 한 줄로 USB 시리얼에 낸다.",
+          y:"PC 쪽은 장치가 무엇이든 CSV 한 줄만 읽으면 되도록 하기 위해서다."},
+        {t:"proc", s:"parse_row", g:"CSV 한 줄 → 값 28개", p:"station/bridge.py", l:559, e:570,
+          w:"CSV 한 줄을 열 이름에 맞춰 숫자로 바꾼다. 열이 모자라거나 숫자가 아니면 버린다.",
+          y:"깨진 줄 하나가 이후 계산과 화면을 망치지 않도록 맨 앞에서 걸러낸다."},
+        {t:"proc", s:"Deriver.__call__", g:"보정·계수 역산·편차 계산", p:"station/bridge.py", l:306, e:414,
+          side:{s:"Deriver.predict", g:"모형으로 예측 (model.py)", lab:"호출", p:"station/bridge.py", l:416, e:456,
+            w:"같은 풍속과 줄 길이를 모형의 평형 계산에 넣어, 연이 있어야 할 위치와 장력을 구한다.",
+            y:"실측과 모형에 같은 입력을 주고 그 차이를 보는 것이 디지털 트윈의 핵심이다."},
+          w:"줄 늘어남과 처짐을 보정해 연의 실제 위치를 구하고, 양력·항력계수를 역산하고, 모형 예측과의 차이를 계산한다.",
+          y:"센서는 줄이 늘어나고 처지는 만큼 틀린 값을 읽는다. 시뮬레이션에서 확인한 보정을 실시간으로 적용한다."},
+        {t:"dec", s:"비행을 기록하고\n있는가?", p:"station/bridge.py", l:1053, e:1061,
+          side:{s:"Recorder.write", g:"로그 파일에 저장", lab:"예", p:"station/bridge.py", l:205, e:218,
+            w:"받은 원시 행을 CSV 로그에 쓰고 1초마다 디스크에 반영한다.",
+            y:"비행 후 계수 교정에 쓸 원본을 남기기 위해서다. 전원이 끊겨도 잃는 것은 1초 분량이다."},
+          mainLab:"아니오",
+          w:"송출하기 직전에 기록이 켜져 있는지 확인한다.",
+          y:"기록이 꺼져 있어도 화면 송출은 계속되어야 한다."},
+        {t:"proc", s:"Hub.publish", g:"접속한 브라우저로 송출", p:"station/bridge.py", l:258, e:271,
+          w:"결과를 JSON으로 만들어 접속 중인 모든 브라우저의 대기열에 넣는다(SSE). 따라가지 못하는 브라우저는 표본만 잃는다.",
+          y:"텔레메트리는 한 방향이라 WebSocket 대신 단순한 SSE를 쓴다. 느린 화면 하나가 센서 읽기를 막으면 안 된다."},
+        {t:"proc", s:"모니터 화면", g:"계기판·3차원 트윈 표시", p:"station/app.js",
+          w:"app.js가 /stream으로 결과를 받아 계기를 갱신하고, scene.js가 3차원 연을 움직인다.",
+          y:"실측과 모형 예측을 나란히 놓고 그 차이를 사람이 바로 판단하게 하기 위해서다."},
+        {t:"proc", s:"twin.identify", g:"저장한 기록으로 CL·CD 역산 (비행 후)", p:"sim/twin.py", l:234, e:258,
+          w:"로그에서 안정된 구간만 골라 양력·항력계수를 역산하고, 부트스트랩으로 신뢰구간을 구한다.",
+          y:"모형의 계수는 처음에는 가정값이다. 실제 비행으로 이 값을 검증하고 바꾸기 위해서다."},
+        {t:"end", s:"params.py", g:"가정값을 실측 계수로 교체", p:"sim/params.py",
+          w:"교정한 계수로 상수를 바꾸면 시뮬레이션과 지상국의 모형 예측이 모두 새 값을 쓴다.",
+          y:"두 곳이 같은 파일의 값을 쓰므로 한 번 바꾸면 함께 반영된다."}
       ]
     }
   };
@@ -587,67 +541,69 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   // 문장이 끝날 때마다 줄을 바꿔 읽기 쉽게 한다. 브라우저의 자동 줄바꿈에만 맡기지 않는다.
   function brk(t){ return esc(t).split(". ").join(".<br>"); }
 
+  function hashOf(n){ return "#code/" + n.p + (n.l ? ":" + n.l + (n.e ? "-" + n.e : "") : ""); }
+
   function flowNode(path, line){
     var hit = null;
     Object.keys(FLOWS).forEach(function(k){
-      FLOWS[k].nodes.forEach(function(n, i){ if (!hit && n.p === path && n.l === line) hit = {k: k, n: n, i: i}; });
+      FLOWS[k].nodes.forEach(function(n, i){
+        if (!hit && n.p === path && (n.l || 0) === (line || 0)) hit = {k: k, n: n, i: i};
+        if (!hit && n.side && n.side.p === path && (n.side.l || 0) === (line || 0)) hit = {k: k, n: n.side, i: i, side: true};
+      });
     });
     return hit;
   }
 
   function flowSvg(spec){
-    var W = 400, CX = 120, NW = 224, SX = 284, SW = 112, GAP = 24, y = 8, out = [], pos = [];
-    var H = {start:50, end:50, proc:50, io:50, dec:76};
-    spec.nodes.forEach(function(n){
-      var h = (n.t === "dec" || n.g) ? H[n.t] : 38;
-      pos.push({y:y, h:h, cy:y + h/2}); y += h + GAP;
-    });
+    var W = 400, CX = 120, NW = 224, SX = 276, SW = 120, GAP = 26, y = 8, out = [], pos = [];
+    var H = {start:52, end:52, proc:52, dec:76};
+    spec.nodes.forEach(function(n){ var h = H[n.t]; pos.push({y:y, h:h, cy:y + h/2}); y += h + GAP; });
     var total = y - GAP + 8;
-    function txt(cx, cy, title, g){
+    function txt(cx, cy, title, g, mono){
       var a = title.split("\n"), n = a.length + (g ? 1 : 0), top = cy - (n - 1) * 9 + 4.5, s = "";
-      a.forEach(function(t, i){ s += '<tspan class="t1" x="' + cx + '" y="' + (top + i * 18) + '">' + esc(t) + '</tspan>'; });
+      a.forEach(function(t, i){ s += '<tspan class="t1' + (mono ? ' mono' : '') + '" x="' + cx + '" y="' + (top + i * 18) + '">' + esc(t) + '</tspan>'; });
       if (g) s += '<tspan class="t2" x="' + cx + '" y="' + (top + a.length * 18 - 1) + '">' + esc(g) + '</tspan>';
       return '<text text-anchor="middle">' + s + '</text>';
     }
     function shape(t, x, y0, w, h){
-      if (t === "start" || t === "end") return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="' + Math.min(25, h/2) + '"/>';
+      if (t === "start" || t === "end") return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="26"/>';
       if (t === "dec"){ var cx = x + w/2, cy = y0 + h/2;
         return '<polygon class="sh" points="' + cx + ',' + y0 + ' ' + (x + w) + ',' + cy + ' ' + cx + ',' + (y0 + h) + ' ' + x + ',' + cy + '"/>'; }
       return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="5"/>';
     }
+    function attrs(n){ return 'data-p="' + n.p + '" data-l="' + (n.l || 0) + '" data-e="' + (n.e || 0) + '"'; }
     spec.nodes.forEach(function(n, i){
-      var P = pos[i];
-      out.push('<g class="fn t-' + n.t + '" data-p="' + n.p + '" data-l="' + n.l + '" tabindex="0" role="link" aria-label="' + esc(n.s.replace(/\n/g, " ")) + '">' +
-        shape(n.t, CX - NW/2, P.y, NW, P.h) + txt(CX, P.cy, n.s, n.t === "dec" ? "" : n.g) + '</g>');
+      var P = pos[i], isCode = /[A-Za-z_.]/.test(n.s.charAt(0)) && n.t !== "dec";
+      out.push('<g class="fn t-' + n.t + '" ' + attrs(n) + ' tabindex="0" role="link" aria-label="' + esc(n.s.replace(/\n/g, " ")) + '">' +
+        shape(n.t, CX - NW/2, P.y, NW, P.h) + txt(CX, P.cy, n.s, n.t === "dec" ? "" : n.g, isCode) + '</g>');
       if (i < spec.nodes.length - 1){
         out.push('<path class="ar" d="M' + CX + ' ' + (P.y + P.h) + 'V' + pos[i+1].y + '"/>');
-        if (n.t === "dec") out.push('<text class="fl-lab" x="' + (CX + 7) + '" y="' + (P.y + P.h + 16) + '">예</text>');
+        if (n.t === "dec") out.push('<text class="fl-lab" x="' + (CX + 7) + '" y="' + (P.y + P.h + 17) + '">' + (n.mainLab || "예") + '</text>');
       }
       if (n.side){
-        var sy = P.cy - 25;
+        var s = n.side, sy = P.cy - 26, lab = s.lab || "아니오";
         out.push('<path class="ar" d="M' + (CX + NW/2) + ' ' + P.cy + 'H' + SX + '"/>');
-        out.push('<text class="fl-lab" x="' + (CX + NW/2 + 5) + '" y="' + (P.cy - 5) + '">아니오</text>');
-        out.push('<g class="sd"><rect class="sh" x="' + SX + '" y="' + sy + '" width="' + SW + '" height="50" rx="5"/>' + txt(SX + SW/2, P.cy, n.side, "") + '</g>');
-        if (n.loop !== undefined){
-          out.push('<path class="ar" d="M' + (SX + SW/2) + ' ' + sy + 'V' + pos[n.loop].cy + 'H' + (CX + NW/2) + '"/>');
-        } else if (!n.stop){
-          out.push('<path class="ar" d="M' + (SX + SW/2) + ' ' + (sy + 50) + 'V' + pos[i+1].cy + 'H' + (CX + NW/2) + '"/>');
+        out.push('<text class="fl-lab" x="' + (CX + NW/2 + 8) + '" y="' + (P.cy - 6) + '">' + lab + '</text>');
+        out.push('<g class="fn sd" ' + attrs(s) + ' tabindex="0" role="link" aria-label="' + esc(s.s) + '">' +
+          '<rect class="sh" x="' + SX + '" y="' + sy + '" width="' + SW + '" height="52" rx="5"/>' + txt(SX + SW/2, P.cy, s.s, s.g, true) + '</g>');
+        if (n.t === "dec" && i < spec.nodes.length - 1){
+          out.push('<path class="ar" d="M' + (SX + SW/2) + ' ' + (sy + 52) + 'V' + pos[i+1].cy + 'H' + (CX + NW/2) + '"/>');
         }
       }
     });
-    return '<svg viewBox="0 0 ' + W + ' ' + total + '" role="img" aria-label="' + spec.name + ' 순서도">' +
+    return '<svg viewBox="0 0 ' + W + ' ' + total + '" role="img" aria-label="' + spec.name + '">' +
       '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b84a3"/></marker></defs>' +
       out.join("") + '</svg>';
   }
 
   function flowHtml(spec){
     return '<div class="goal">' + esc(spec.goal) + '</div>' + flowSvg(spec) +
-      '<div class="hint">단계를 누르면 설명이 나오고, 오른쪽 코드가 그 줄로 이동합니다.</div>';
+      '<div class="hint">상자는 코드 블록 하나입니다. 누르면 설명이 나오고, 오른쪽 코드에 그 블록 전체가 표시됩니다.</div>';
   }
 
   function buildTabs(){
     var tabs = $("tabs"), html = "";
-    Object.keys(FLOWS).forEach(function(k){ html += '<button type="button" data-tab="' + k + '">순서도 · ' + FLOWS[k].name + '</button>'; });
+    Object.keys(FLOWS).forEach(function(k){ html += '<button type="button" data-tab="' + k + '">' + FLOWS[k].name + '</button>'; });
     html += '<button type="button" data-tab="files">파일</button>';
     tabs.innerHTML = html;
     tabs.addEventListener("click", function(e){
@@ -657,7 +613,11 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     fw.innerHTML = Object.keys(FLOWS).map(function(k){
       return '<div data-flow="' + k + '" hidden>' + flowHtml(FLOWS[k]) + '</div>';
     }).join("");
-    function go(g){ if (g) location.hash = "#code/" + g.getAttribute("data-p") + ":" + g.getAttribute("data-l"); }
+    function go(g){
+      if (!g) return;
+      var l = +g.getAttribute("data-l"), e = +g.getAttribute("data-e");
+      location.hash = "#code/" + g.getAttribute("data-p") + (l ? ":" + l + (e ? "-" + e : "") : "");
+    }
     fw.addEventListener("click", function(e){ go(e.target.closest(".fn")); });
     fw.addEventListener("keydown", function(e){
       if (e.key === "Enter" || e.key === " "){ var g = e.target.closest(".fn"); if (g){ e.preventDefault(); go(g); } }
@@ -671,7 +631,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     document.querySelectorAll("#flowwrap [data-flow]").forEach(function(d){ d.hidden = d.getAttribute("data-flow") !== k; });
   }
 
-  function show(path, line){
+  function show(path, line, end){
     if (!DATA || !DATA[path]) { path = DEFAULT; line = 0; }
     var f = DATA[path]; current = path;
     $("fpath").textContent = path;
@@ -687,20 +647,18 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     $("codebox").scrollTop = 0;
     var kids = $("codeel").children;
     if (line > 0 && kids[line - 1]){
-      var from = kids[line - 1];
-      for (var i = line - 1; i < Math.min(line + 3, kids.length); i++) kids[i].classList.add("hl");
-      var cb = $("codebox");
-      cb.scrollTop = Math.max(0, from.offsetTop - 70);
+      if (end >= line) for (var i = line - 1; i < Math.min(end, kids.length); i++) kids[i].classList.add("hl");
+      $("codebox").scrollTop = Math.max(0, kids[line - 1].offsetTop - 70);
     }
-    var hit = line > 0 ? flowNode(path, line) : null;
+    var hit = flowNode(path, line);
     var fs = $("fstep");
     if (hit){
-      fs.innerHTML = '<b>' + FLOWS[hit.k].name + ' ' + (hit.i + 1) + '단계 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + brk(hit.n.w) + '<br><em>왜</em>' + brk(hit.n.y);
+      fs.innerHTML = '<b>' + (hit.i + 1) + '번째 블록 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + brk(hit.n.w) + '<br><em>WHY?</em>' + brk(hit.n.y);
       fs.className = "fstep on";
       if (!$("flowwrap").hidden) tab(hit.k);
     } else { fs.className = "fstep"; }
     document.querySelectorAll("#flowwrap .fn").forEach(function(g){
-      g.classList.toggle("on", g.getAttribute("data-p") === path && +g.getAttribute("data-l") === line);
+      g.classList.toggle("on", g.getAttribute("data-p") === path && +g.getAttribute("data-l") === (line || 0));
     });
     document.querySelectorAll("#tree a.f").forEach(function(a){
       a.classList.toggle("on", a.getAttribute("data-p") === path);
@@ -712,8 +670,8 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   function route(){
     var h = decodeURIComponent(location.hash || "");
     if (h.indexOf("#code/") === 0){
-      var spec = h.slice(6), m = /^(.*):(\d+)$/.exec(spec);
-      show(m ? m[1] : spec, m ? +m[2] : 0);
+      var spec = h.slice(6), m = /^(.*):(\d+)(?:-(\d+))?$/.exec(spec);
+      show(m ? m[1] : spec, m ? +m[2] : 0, m && m[3] ? +m[3] : 0);
       var sec = $("viewer");
       if (sec && !route.first) { sec.scrollIntoView({block: "start"}); }
     } else if (!current && DATA) { show(DEFAULT); }
@@ -736,7 +694,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
 
   fetch("data/code.json").then(function(r){ return r.json(); }).then(function(d){
     DATA = d;
-    buildTabs(); tab("ground");
+    buildTabs(); tab("main");
     $("tree").innerHTML = buildTree(Object.keys(d));
     $("q").addEventListener("input", function(e){ filter(e.target.value); });
     route.first = !(location.hash || "").startsWith("#code/") ? true : false;
