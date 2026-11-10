@@ -125,7 +125,9 @@ text .t1.mono{font-family:var(--mono);font-size:12.5px}
 .fstep{display:none;margin-top:10px;padding:10px 12px;background:#eef5ff;border:1px solid #c9dcf8;border-radius:8px;font-size:14px;line-height:1.65;color:#1c2b3d}
 .fstep.on{display:block}
 .fstep b{display:block;margin-bottom:2px;color:var(--blue-d)}
-.fstep em{font-style:normal;font-weight:700;font-size:12px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
+.fstep .why{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.fstep .why span{flex:1;min-width:0}
+.fstep em{flex:none;font-style:normal;font-weight:700;font-size:12px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
 .prow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .dl{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid var(--blue);background:#fff;color:var(--blue-d);border-radius:7px;cursor:pointer}
 .dl:hover{background:var(--blue);color:#fff}
@@ -649,7 +651,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     var hit = flowNode(path, line);
     var fs = $("fstep");
     if (hit){
-      fs.innerHTML = '<b>' + (hit.i + 1) + '번째 블록 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + brk(hit.n.w) + '<br><em>목적</em>' + brk(hit.n.y);
+      fs.innerHTML = '<b>' + (hit.i + 1) + '번째 블록 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + '<div>' + brk(hit.n.w) + '</div><div class="why"><em>목적</em><span>' + brk(hit.n.y) + '</span></div>';
       fs.className = "fstep on";
       if (!$("flowwrap").hidden) tab(hit.k);
     } else { fs.className = "fstep"; }
