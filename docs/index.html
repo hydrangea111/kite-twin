@@ -496,7 +496,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   // ---- 코드 블록 순서도 ----
   // 상자 하나 = 코드 블록 하나(함수·메서드, 또는 파일 전체).
   // l, e: 블록의 시작·끝 줄. 파일 전체가 블록이면 생략하고, 그 경우 코드는 강조하지 않는다.
-  // w: 하는 일,  y: 목적(이 블록이 왜 필요한가)
+  // w: 하는 일,  y: 이유(이 블록이 왜 필요한가)
   var FLOWS = {
     main: {
       name: "코드 블록 순서도",
@@ -652,7 +652,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     var hit = flowNode(path, line);
     var fs = $("fstep");
     if (hit){
-      fs.innerHTML = '<b>' + (hit.i + 1) + '번째 블록 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + '<div class="why"><em class="fx">기능</em><span>' + brk(hit.n.w) + '</span></div><div class="why"><em>목적</em><span>' + brk(hit.n.y) + '</span></div>';
+      fs.innerHTML = '<b>' + (hit.i + 1) + '번째 블록 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + '<div class="why"><em class="fx">기능</em><span>' + brk(hit.n.w) + '</span></div><div class="why"><em>이유</em><span>' + brk(hit.n.y) + '</span></div>';
       fs.className = "fstep on";
       if (!$("flowwrap").hidden) tab(hit.k);
     } else { fs.className = "fstep"; }
