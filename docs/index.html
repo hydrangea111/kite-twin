@@ -103,30 +103,27 @@ pre.cmd .c{color:#8fb0d6}
 .tabs button{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:6px 11px;font:600 13px var(--sans);color:var(--mute);cursor:pointer}
 .tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .flowwrap{overflow:auto;flex:1}
-.flowwrap{padding:12px 12px 20px}
-.goal{background:#fff;border:1px solid var(--line2);border-left:4px solid var(--teal);border-radius:8px;padding:11px 13px;font-size:14px;line-height:1.65;color:var(--ink);margin-bottom:12px}
-.goal b{display:block;font-size:12px;color:var(--teal);margin-bottom:3px;letter-spacing:.02em}
-.step{background:#fff;border:1.5px solid #b9c9dd;border-radius:10px;padding:11px 13px;cursor:pointer;outline:none;transition:border-color .12s,box-shadow .12s}
-.step:hover,.step:focus{border-color:var(--blue);box-shadow:0 2px 10px rgba(31,111,235,.14)}
-.step.on{border-color:var(--blue);background:#eef5ff;box-shadow:0 0 0 2px rgba(31,111,235,.25)}
-.step.t-dec{border-color:#e0b43a;background:#fffbee}
-.step.t-start,.step.t-end{border-radius:22px;border-color:#7aa7ee}
-.step .hd{display:flex;align-items:center;gap:7px}
-.step .no{flex:none;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font:700 12px var(--sans);display:flex;align-items:center;justify-content:center}
-.step.t-dec .no{background:#d9a400}
-.step .kind{flex:none;font:700 11px var(--sans);color:var(--blue-d);background:var(--blue-l);border-radius:5px;padding:1px 6px}
-.step.t-dec .kind{color:#7a5a00;background:#fbeaa8}
-.step .tt{font:700 14.5px/1.4 var(--sans);color:var(--ink)}
-.step .wh{margin-top:6px;font-size:13.5px;line-height:1.6;color:#2b4059}
-.step .wy{margin-top:5px;font-size:13px;line-height:1.6;color:var(--mute)}
-.step .wy em{font-style:normal;font-weight:700;font-size:11.5px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
-.step .br{display:grid;gap:4px;margin-top:8px;font-size:13px}
-.step .by{color:#0b7a6b;font-weight:600}
-.step .bn{color:#a05a00;font-weight:600}
-.step .go{margin-top:8px;font:12px var(--mono);color:var(--blue-d)}
-.arr{height:20px;position:relative}
-.arr:before{content:"";position:absolute;left:50%;top:0;bottom:6px;width:2px;margin-left:-1px;background:#9fb4cc}
-.arr:after{content:"";position:absolute;left:50%;bottom:0;margin-left:-6px;border:6px solid transparent;border-top:7px solid #9fb4cc;border-bottom:0}
+.flowwrap{padding:12px 10px 18px}
+.goal{font-size:13.5px;font-weight:600;color:var(--ink);text-align:center;padding:2px 6px 10px}
+.hint{font-size:12px;color:var(--faint);text-align:center;margin-top:8px}
+.flowwrap svg{width:100%;height:auto;display:block}
+.fn{cursor:pointer;outline:none}
+.fn .sh,.sd .sh{fill:#fff;stroke:#8fa8c4;stroke-width:1.5}
+.sd .sh{fill:#f6f8fb;stroke-dasharray:4 3}
+.fn.t-start .sh,.fn.t-end .sh{fill:#e3efff;stroke:#1f6feb}
+.fn.t-dec .sh{fill:#fff7e0;stroke:#d9a400}
+.fn:hover .sh,.fn:focus .sh{stroke:var(--blue);stroke-width:2.5}
+.fn.on .sh{fill:var(--blue);stroke:var(--blue-d)}
+text .t1{font:700 13.5px var(--sans);fill:#1c2b3d}
+text .t2{font:500 11.5px var(--sans);fill:#5b6f88}
+.fn.on .t1,.fn.on .t2{fill:#fff}
+.sd text .t1{font-size:12px;font-weight:600;fill:#3b4f69}
+.ar{fill:none;stroke:#6b84a3;stroke-width:1.6;marker-end:url(#ah)}
+.fl-lab{font:700 11.5px var(--sans);fill:#52657d}
+.fstep{display:none;margin-top:10px;padding:10px 12px;background:#eef5ff;border:1px solid #c9dcf8;border-radius:8px;font-size:14px;line-height:1.65;color:#1c2b3d}
+.fstep.on{display:block}
+.fstep b{display:block;margin-bottom:2px;color:var(--blue-d)}
+.fstep em{font-style:normal;font-weight:700;font-size:12px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
 .code .ln.hl{background:#fff4c2}
 .viewer{display:grid;grid-template-columns:420px 1fr;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff;min-height:560px;margin-top:10px}
 .side{border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;max-height:760px}
@@ -407,6 +404,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
         <div class="p" id="fpath">—</div>
         <div class="d" id="fdesc"></div>
         <div class="m" id="fmeta"></div>
+        <div class="fstep" id="fstep"></div>
       </div>
       <div class="code" id="codebox"><pre><code class="hljs" id="codeel"></code></pre></div>
     </div>
@@ -492,98 +490,156 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   }
 
   // ---- 순서도 ----
-  // t: start | proc | io | dec | end,  s: 제목,  w: 하는 일,  y: 왜 필요한가
-  // 판단(dec)은 yes / no 로 갈래를 적는다.
+  // s: 도형 안 제목, g: 한 줄 목적, w/y: 단계를 눌렀을 때 보여 줄 자세한 설명(하는 일 / 왜)
   var FLOWS = {
     ground: {
       name: "지상국",
-      goal: "센서가 읽은 값은 연의 실제 상태와 다르다. 줄은 늘어나고 처지기 때문이다. 이 순서도는 수신한 한 행마다 그 차이를 바로잡아 연의 실제 위치와 양력·항력계수를 계산하는 과정이다.",
+      goal: "센서값을 연의 실제 상태로 바로잡는다 (수신한 행마다 1회)",
       nodes: [
-        {t:"start", s:"센서 한 행 수신", w:"줄 길이, 장력, 고도각, 풍속 등 원시 채널을 읽는다.",
-          y:"실물 장치, 기록 파일, 시뮬레이터 어느 쪽에서 오더라도 같은 형식으로 받아 이후 계산을 한 벌로 쓰기 위해서다.", p:"station/bridge.py", l:559},
-        {t:"proc", s:"줄이 늘어난 만큼 거리 보정", w:"실제 거리 r = L × (1 + T/EA) 를 구한다.",
-          y:"엔코더는 늘어나지 않은 줄 길이만 잰다. 장력이 걸리면 줄이 늘어나 연은 그보다 멀리 있다.", p:"station/bridge.py", l:313},
-        {t:"proc", s:"줄 처짐각 계산", w:"줄 자체 무게 때문에 생기는 처짐각을 구한다.",
-          y:"지상 각도 센서는 줄 끝의 접선 방향을 읽는다. 연이 실제로 있는 방향(현)은 그보다 높아서, 그 차이를 알아야 한다.", p:"station/bridge.py", l:326},
-        {t:"dec", s:"처짐각이 허용 범위 안인가?", w:"줄이 느슨하면 처짐각이 한없이 커진다.",
-          y:"처짐 보정은 장력에 반비례해서, 장력이 0.01 N이면 1151°가 나온다. 이런 값은 화면에 그대로 보이면 안 된다.",
-          yes:"그대로 사용", no:"상한으로 자르고 ‘보정 신뢰 불가’ 표시", p:"station/bridge.py", l:330},
-        {t:"proc", s:"연의 위치 (x, z) 계산", w:"보정한 거리와 현 각도로 연의 수평·수직 위치를 구한다.",
-          y:"보정하지 않은 위치와 나란히 보여 주어, 각 보정이 실제로 몇 cm를 바꾸는지 눈으로 확인하게 한다.", p:"station/bridge.py", l:332},
-        {t:"proc", s:"양력·항력계수 역산", w:"측정한 장력·각도·풍속을 힘의 평형식에 넣어 CL, CD를 거꾸로 구한다.",
-          y:"계수는 직접 잴 수 없다. 대신 그 결과로 나타나는 장력과 각도는 잴 수 있다.", p:"station/bridge.py", l:340},
-        {t:"dec", s:"이 표본을 계수 추정에 써도 되는가?", w:"연이 안정된 상태이고, 줄이 팽팽하며, 처짐 보정이 유효한지 확인한다.",
-          y:"연이 가속하는 중에는 힘의 평형식이 성립하지 않는다. 그때의 역산값은 흔들리는 값이 아니라 틀린 값이다.",
-          yes:"표본으로 저장", no:"이번 행은 추정에서 제외", p:"station/bridge.py", l:344},
-        {t:"proc", s:"계수 추정값 갱신", w:"최근 표본 200개의 중앙값을 CL, CD의 추정값으로 삼는다.",
-          y:"평균은 튀는 값 하나에 끌려가지만 중앙값은 그렇지 않다.", p:"station/bridge.py", l:346},
-        {t:"proc", s:"모형 예측과 비교", w:"같은 풍속과 줄 길이에서 모형이 말하는 위치·장력을 구해 실측과의 차이를 계산한다.",
-          y:"모형이 현실과 얼마나 맞는지를 비행 중에 바로 확인하기 위해서다.", p:"station/bridge.py", l:358},
-        {t:"end", s:"브라우저로 송출하고 다음 행으로", w:"결과를 SSE로 내보낸다.",
-          y:"텔레메트리는 한 방향으로만 흐르므로 WebSocket 대신 단순한 SSE를 쓰고, 브라우저는 끊겨도 스스로 다시 연결한다.", p:"station/bridge.py", l:258}
+        {t:"start", s:"센서 한 행 수신", p:"station/bridge.py", l:559,
+          w:"줄 길이, 장력, 고도각, 풍속 등 원시 채널을 읽는다.",
+          y:"실물 장치, 기록 파일, 시뮬레이터 어느 쪽에서 오더라도 같은 형식으로 받아 이후 계산을 한 벌로 쓰기 위해서다."},
+        {t:"proc", s:"줄 늘어남 보정", g:"연은 줄 길이보다 더 멀리 있다", p:"station/bridge.py", l:313,
+          w:"실제 거리 r = L × (1 + T/EA) 를 구한다.",
+          y:"엔코더는 늘어나지 않은 줄 길이만 잰다. 장력이 걸리면 줄이 늘어나 연은 그보다 멀리 있다."},
+        {t:"proc", s:"처짐각 계산", g:"줄이 처져 센서 각도가 낮다", p:"station/bridge.py", l:326,
+          w:"줄 자체 무게 때문에 생기는 처짐각을 구한다.",
+          y:"지상 각도 센서는 줄 끝의 접선 방향을 읽는다. 연이 실제로 있는 방향은 그보다 높다."},
+        {t:"dec", s:"처짐각이\n정상 범위?", side:"상한으로 자르고\n‘신뢰 불가’ 표시", p:"station/bridge.py", l:330,
+          w:"줄이 느슨하면 처짐각이 한없이 커지므로 상한을 넘는지 확인한다.",
+          y:"처짐 보정은 장력에 반비례해서 장력이 0.01 N이면 1151°가 나온다. 이런 값은 화면에 그대로 나가면 안 된다."},
+        {t:"proc", s:"연 위치 (x, z) 계산", g:"보정 효과를 눈으로 확인", p:"station/bridge.py", l:332,
+          w:"보정한 거리와 현 각도로 연의 수평·수직 위치를 구한다.",
+          y:"보정하지 않은 위치와 나란히 보여 주어, 각 보정이 실제로 몇 cm를 바꾸는지 확인하게 한다."},
+        {t:"proc", s:"CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"station/bridge.py", l:340,
+          w:"측정한 장력·각도·풍속을 힘의 평형식에 넣어 양력·항력계수를 구한다.",
+          y:"계수는 직접 잴 수 없다. 대신 그 결과로 나타나는 장력과 각도는 잴 수 있다."},
+        {t:"dec", s:"믿을 수 있는\n표본?", side:"이번 행은\n추정에서 제외", p:"station/bridge.py", l:344,
+          w:"연이 안정된 상태이고, 줄이 팽팽하며, 처짐 보정이 유효한지 확인한다.",
+          y:"연이 가속하는 중에는 힘의 평형식이 성립하지 않는다. 그때의 역산값은 흔들리는 값이 아니라 틀린 값이다."},
+        {t:"proc", s:"추정값 갱신", g:"중앙값으로 튀는 값 방어", p:"station/bridge.py", l:346,
+          w:"최근 표본 200개의 중앙값을 CL, CD의 추정값으로 삼는다.",
+          y:"평균은 튀는 값 하나에 끌려가지만 중앙값은 그렇지 않다."},
+        {t:"proc", s:"모형 예측과 비교", g:"모형이 맞는지 실시간 점검", p:"station/bridge.py", l:358,
+          w:"같은 풍속과 줄 길이에서 모형이 말하는 위치·장력을 구해 실측과의 차이를 계산한다.",
+          y:"모형이 현실과 얼마나 맞는지를 비행 중에 바로 확인하기 위해서다."},
+        {t:"end", s:"브라우저로 송출", g:"다음 행으로 되풀이", p:"station/bridge.py", l:258,
+          w:"계산 결과를 SSE로 브라우저에 내보낸다.",
+          y:"텔레메트리는 한 방향으로만 흐르므로 WebSocket 대신 단순한 SSE를 쓰고, 브라우저는 끊겨도 스스로 다시 연결한다."}
       ]
     },
     sim: {
       name: "시뮬레이션",
-      goal: "바람 속에서 연이 시간에 따라 어떻게 움직이고, 줄에 걸리는 장력이 어떻게 변하는지 계산한다. 줄의 강성을 바꿔 가며 돌풍 때 피크 장력이 얼마나 줄어드는지 비교하는 것이 목적이다.",
+      goal: "연의 움직임과 줄 장력을 시간순으로 계산한다 (비행 1회)",
       nodes: [
-        {t:"start", s:"입력 준비", w:"연·줄·탑재물의 물리 상수, 바람장, 초기 상태를 정한다.",
-          y:"줄 강성만 바꿔 같은 조건에서 비교해야 하므로, 모든 값을 입력으로 분리해 두었다.", p:"sim/params.py", l:1},
-        {t:"proc", s:"줄 장력 계산", w:"줄이 늘어난 길이에 비례하는 힘과 감쇠력을 더한다. 줄이 느슨하면 0이다.",
-          y:"줄은 당기기만 할 뿐 밀지 못한다. 연구의 핵심 변수인 줄의 탄성이 여기에 들어간다.", p:"sim/model.py", l:148},
-        {t:"proc", s:"공기력 계산", w:"바람에 대한 연의 상대 속도로 양력과 항력을 구한다.",
-          y:"연이 움직이면 맞바람의 속도가 달라지므로, 매 순간 다시 계산해야 한다.", p:"sim/model.py", l:150},
-        {t:"proc", s:"힘 합치기", w:"공기력, 줄 항력, 중력, 줄 장력을 더해 연에 작용하는 합력을 구한다.",
-          y:"줄은 높이에 따라 바람이 다르므로, 줄 항력은 줄 중간 높이의 바람으로 계산한다.", p:"sim/model.py", l:154},
-        {t:"proc", s:"가속도 계산", w:"캔버스에 수직인 방향과 나란한 방향에 서로 다른 질량을 적용한다.",
-          y:"연은 넓은 면이라 수직으로 움직일 때 주변 공기를 함께 끌고 간다. 이를 무시하면 반응이 실제보다 빠르게 나온다.", p:"sim/model.py", l:164},
-        {t:"proc", s:"시간을 한 걸음 진행", w:"Radau 적분기로 위치와 속도를 갱신한다. 한 걸음은 0.1 s를 넘기지 않는다.",
-          y:"돌풍은 짧아서 적분기가 보폭을 크게 잡으면 돌풍을 통째로 건너뛴다. 실제로 돌풍을 놓치고 정상 장력을 피크로 낸 사례가 있었다.", p:"sim/model.py", l:337},
-        {t:"dec", s:"정해 둔 종료 시각에 도달했나?", w:"현재 시각과 종료 시각을 비교한다.",
-          y:"한 걸음마다 새 위치에서 힘을 다시 계산해야 하므로, 끝날 때까지 되풀이한다.",
-          yes:"결과 정리로", no:"‘줄 장력 계산’으로 돌아간다", p:"sim/model.py", l:339},
-        {t:"end", s:"장력·고도각 정리 후 반환", w:"각 시각의 위치·속도로 장력과 고도각을 구해 한꺼번에 돌려준다.",
-          y:"분석 스크립트가 같은 형식의 결과를 받아 피크 장력, 진동 등을 계산한다.", p:"sim/model.py", l:356}
+        {t:"start", s:"입력 준비", g:"줄 강성만 바꿔 비교하려고", p:"sim/params.py", l:1,
+          w:"연·줄·탑재물의 물리 상수, 바람장, 초기 상태를 정한다.",
+          y:"줄 강성만 바꿔 같은 조건에서 비교해야 하므로, 모든 값을 입력으로 분리해 두었다."},
+        {t:"proc", s:"줄 장력 계산", g:"늘어난 만큼 당기는 힘", p:"sim/model.py", l:148,
+          w:"줄이 늘어난 길이에 비례하는 힘과 감쇠력을 더한다. 줄이 느슨하면 0이다.",
+          y:"줄은 당기기만 할 뿐 밀지 못한다. 연구의 핵심 변수인 줄의 탄성이 여기에 들어간다."},
+        {t:"proc", s:"공기력 계산", g:"상대 풍속으로 양력·항력", p:"sim/model.py", l:150,
+          w:"바람에 대한 연의 상대 속도로 양력과 항력을 구한다.",
+          y:"연이 움직이면 맞바람의 속도가 달라지므로 매 순간 다시 계산해야 한다."},
+        {t:"proc", s:"힘 합치기", g:"공기력 + 줄 항력 + 중력 − 장력", p:"sim/model.py", l:154,
+          w:"연에 작용하는 합력을 구한다.",
+          y:"줄은 높이에 따라 바람이 다르므로, 줄 항력은 줄 중간 높이의 바람으로 계산한다."},
+        {t:"proc", s:"가속도 계산", g:"캔버스는 공기를 끌고 움직인다", p:"sim/model.py", l:164,
+          w:"캔버스에 수직인 방향과 나란한 방향에 서로 다른 질량을 적용한다.",
+          y:"연은 넓은 면이라 수직으로 움직일 때 주변 공기를 함께 끌고 간다. 이를 무시하면 반응이 실제보다 빠르게 나온다."},
+        {t:"proc", s:"0.1 s 이내로 한 걸음", g:"돌풍을 건너뛰지 않으려고", p:"sim/model.py", l:337,
+          w:"Radau 적분기로 위치와 속도를 갱신한다. 한 걸음은 0.1 s를 넘기지 않는다.",
+          y:"돌풍은 짧아서 적분기가 보폭을 크게 잡으면 통째로 건너뛴다. 실제로 돌풍을 놓치고 정상 장력을 피크로 낸 사례가 있었다."},
+        {t:"dec", s:"종료 시각?", side:"장력 계산으로\n되돌아감", loop:1, p:"sim/model.py", l:339,
+          w:"현재 시각과 종료 시각을 비교한다.",
+          y:"한 걸음마다 새 위치에서 힘을 다시 계산해야 하므로 끝날 때까지 되풀이한다."},
+        {t:"end", s:"장력·고도각 정리", g:"결과를 분석에 넘김", p:"sim/model.py", l:356,
+          w:"각 시각의 위치·속도로 장력과 고도각을 구해 한꺼번에 돌려준다.",
+          y:"분석 스크립트가 같은 형식의 결과를 받아 피크 장력, 진동 등을 계산한다."}
       ]
     },
     twin: {
       name: "계수 교정",
-      goal: "시뮬레이션이 쓰는 양력·항력계수는 처음에는 가정값이다. 실제 비행 기록에서 이 값을 거꾸로 구해 모형을 현실에 맞추는 것이 목적이다.",
+      goal: "실제 비행 기록으로 양력·항력계수의 가정값을 교체한다",
       nodes: [
-        {t:"start", s:"비행 기록 입력", w:"시각, 줄 길이, 장력, 고도각, 풍속의 시계열을 받는다.",
-          y:"가정값 대신 실측에서 계수를 얻기 위해서다.", p:"sim/twin.py", l:234},
-        {t:"proc", s:"안정된 구간만 고르기", w:"장력과 고도각의 변화가 느리고, 줄이 팽팽하며, 처짐 보정이 유효한 행만 남긴다.",
-          y:"역산에 쓰는 힘의 평형식은 연이 가속하지 않을 때만 맞는다. 줄이 느슨한 구간은 값이 흔들리는 정도가 아니라 CD가 음수로 나올 만큼 틀린다.", p:"sim/twin.py", l:148},
-        {t:"dec", s:"남은 표본이 50개 이상인가?", w:"고른 행의 개수를 센다.",
-          y:"표본이 너무 적으면 어떤 계수를 내놓아도 믿을 수 없다.",
-          yes:"계속 진행", no:"오류를 내고 종료 (교정 불가)", p:"sim/twin.py", l:237},
-        {t:"proc", s:"표본마다 CL·CD 역산", w:"처짐을 되돌리고 줄 항력을 뺀 뒤, 남은 힘을 연에 작용하는 공기력으로 보고 계수를 구한다.",
-          y:"측정한 장력과 각도가 곧 공기력의 크기와 방향을 알려 주기 때문이다.", p:"sim/twin.py", l:204},
-        {t:"proc", s:"표본을 다시 뽑아 불확실성 구하기", w:"표본을 복원추출로 2000번 다시 뽑고, 그때마다 중앙값을 구한다.",
-          y:"표본 수가 한정되어 있으므로, 결과가 표본 선택에 따라 얼마나 흔들리는지 알아야 값을 얼마나 믿을지 말할 수 있다.", p:"sim/twin.py", l:247},
-        {t:"end", s:"CL·CD와 95 % 신뢰구간 반환", w:"중앙값과 2.5 %–97.5 % 구간을 돌려준다.",
-          y:"이 값으로 모형의 가정값을 교체한다.", p:"sim/twin.py", l:251}
+        {t:"start", s:"비행 기록 입력", g:"가정값 대신 실측 사용", p:"sim/twin.py", l:234,
+          w:"시각, 줄 길이, 장력, 고도각, 풍속의 시계열을 받는다.",
+          y:"가정값 대신 실측에서 계수를 얻기 위해서다."},
+        {t:"proc", s:"안정된 구간만 선별", g:"가속·느슨한 구간은 제외", p:"sim/twin.py", l:148,
+          w:"장력과 고도각의 변화가 느리고, 줄이 팽팽하며, 처짐 보정이 유효한 행만 남긴다.",
+          y:"역산에 쓰는 힘의 평형식은 연이 가속하지 않을 때만 맞는다. 줄이 느슨한 구간은 CD가 음수로 나올 만큼 틀린다."},
+        {t:"dec", s:"표본 50개\n이상?", side:"오류로 종료", stop:true, p:"sim/twin.py", l:237,
+          w:"고른 행의 개수를 센다.",
+          y:"표본이 너무 적으면 어떤 계수를 내놓아도 믿을 수 없다."},
+        {t:"proc", s:"표본별 CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"sim/twin.py", l:204,
+          w:"처짐을 되돌리고 줄 항력을 뺀 뒤, 남은 힘을 연에 작용하는 공기력으로 보고 계수를 구한다.",
+          y:"측정한 장력과 각도가 곧 공기력의 크기와 방향을 알려 주기 때문이다."},
+        {t:"proc", s:"2000회 다시 뽑기", g:"결과의 불확실성 측정", p:"sim/twin.py", l:247,
+          w:"표본을 복원추출로 2000번 다시 뽑고, 그때마다 중앙값을 구한다.",
+          y:"표본 수가 한정되어 있으므로, 결과가 표본 선택에 따라 얼마나 흔들리는지 알아야 값을 얼마나 믿을지 말할 수 있다."},
+        {t:"end", s:"CL·CD, 95 % 구간", g:"모형의 가정값을 교체", p:"sim/twin.py", l:251,
+          w:"중앙값과 2.5 %–97.5 % 구간을 돌려준다.",
+          y:"이 값으로 모형의 가정값을 교체한다."}
       ]
     }
   };
 
-  function flowHtml(spec){
-    var h = '<div class="goal"><b>이 알고리즘이 푸는 문제</b>' + esc(spec.goal) + '</div>';
-    spec.nodes.forEach(function(n, i){
-      var cls = "step t-" + n.t;
-      h += '<div class="' + cls + '" data-p="' + n.p + '" data-l="' + n.l + '" tabindex="0" role="link">' +
-        '<div class="hd"><span class="no">' + (i + 1) + '</span>' +
-        (n.t === "dec" ? '<span class="kind">판단</span>' : n.t === "start" ? '<span class="kind">시작</span>' : n.t === "end" ? '<span class="kind">끝</span>' : '') +
-        '<span class="tt">' + esc(n.s) + '</span></div>' +
-        '<div class="wh">' + esc(n.w) + '</div>' +
-        '<div class="wy"><em>왜</em>' + esc(n.y) + '</div>';
-      if (n.t === "dec"){
-        h += '<div class="br"><span class="by">예 → ' + esc(n.yes) + '</span><span class="bn">아니오 → ' + esc(n.no) + '</span></div>';
-      }
-      h += '<div class="go">' + n.p.split("/").pop() + ' ' + n.l + '줄 보기 ›</div></div>';
-      if (i < spec.nodes.length - 1) h += '<div class="arr" aria-hidden="true"></div>';
+  function flowNode(path, line){
+    var hit = null;
+    Object.keys(FLOWS).forEach(function(k){
+      FLOWS[k].nodes.forEach(function(n, i){ if (!hit && n.p === path && n.l === line) hit = {k: k, n: n, i: i}; });
     });
-    return h;
+    return hit;
+  }
+
+  function flowSvg(spec){
+    var W = 400, CX = 120, NW = 224, SX = 270, SW = 124, GAP = 24, y = 8, out = [], pos = [];
+    var H = {start:50, end:50, proc:50, io:50, dec:76};
+    spec.nodes.forEach(function(n){
+      var h = (n.t === "dec" || n.g) ? H[n.t] : 38;
+      pos.push({y:y, h:h, cy:y + h/2}); y += h + GAP;
+    });
+    var total = y - GAP + 8;
+    function txt(cx, cy, title, g){
+      var a = title.split("\n"), n = a.length + (g ? 1 : 0), top = cy - (n - 1) * 9 + 4.5, s = "";
+      a.forEach(function(t, i){ s += '<tspan class="t1" x="' + cx + '" y="' + (top + i * 18) + '">' + esc(t) + '</tspan>'; });
+      if (g) s += '<tspan class="t2" x="' + cx + '" y="' + (top + a.length * 18 - 1) + '">' + esc(g) + '</tspan>';
+      return '<text text-anchor="middle">' + s + '</text>';
+    }
+    function shape(t, x, y0, w, h){
+      if (t === "start" || t === "end") return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="' + Math.min(25, h/2) + '"/>';
+      if (t === "dec"){ var cx = x + w/2, cy = y0 + h/2;
+        return '<polygon class="sh" points="' + cx + ',' + y0 + ' ' + (x + w) + ',' + cy + ' ' + cx + ',' + (y0 + h) + ' ' + x + ',' + cy + '"/>'; }
+      return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="5"/>';
+    }
+    spec.nodes.forEach(function(n, i){
+      var P = pos[i];
+      out.push('<g class="fn t-' + n.t + '" data-p="' + n.p + '" data-l="' + n.l + '" tabindex="0" role="link" aria-label="' + esc(n.s.replace(/\n/g, " ")) + '">' +
+        shape(n.t, CX - NW/2, P.y, NW, P.h) + txt(CX, P.cy, n.s, n.t === "dec" ? "" : n.g) + '</g>');
+      if (i < spec.nodes.length - 1){
+        out.push('<path class="ar" d="M' + CX + ' ' + (P.y + P.h) + 'V' + pos[i+1].y + '"/>');
+        if (n.t === "dec") out.push('<text class="fl-lab" x="' + (CX + 7) + '" y="' + (P.y + P.h + 16) + '">예</text>');
+      }
+      if (n.side){
+        var sy = P.cy - 25;
+        out.push('<path class="ar" d="M' + (CX + NW/2) + ' ' + P.cy + 'H' + SX + '"/>');
+        out.push('<text class="fl-lab" x="' + (CX + NW/2 + 5) + '" y="' + (P.cy - 5) + '">아니오</text>');
+        out.push('<g class="sd"><rect class="sh" x="' + SX + '" y="' + sy + '" width="' + SW + '" height="50" rx="5"/>' + txt(SX + SW/2, P.cy, n.side, "") + '</g>');
+        if (n.loop !== undefined){
+          out.push('<path class="ar" d="M' + (SX + SW/2) + ' ' + sy + 'V' + pos[n.loop].cy + 'H' + (CX + NW/2) + '"/>');
+        } else if (!n.stop){
+          out.push('<path class="ar" d="M' + (SX + SW/2) + ' ' + (sy + 50) + 'V' + pos[i+1].cy + 'H' + (CX + NW/2) + '"/>');
+        }
+      }
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + total + '" role="img" aria-label="' + spec.name + ' 순서도">' +
+      '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b84a3"/></marker></defs>' +
+      out.join("") + '</svg>';
+  }
+
+  function flowHtml(spec){
+    return '<div class="goal">' + esc(spec.goal) + '</div>' + flowSvg(spec) +
+      '<div class="hint">단계를 누르면 설명이 나오고, 오른쪽 코드가 그 줄로 이동합니다.</div>';
   }
 
   function buildTabs(){
@@ -599,9 +655,9 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
       return '<div data-flow="' + k + '" hidden>' + flowHtml(FLOWS[k]) + '</div>';
     }).join("");
     function go(g){ if (g) location.hash = "#code/" + g.getAttribute("data-p") + ":" + g.getAttribute("data-l"); }
-    fw.addEventListener("click", function(e){ go(e.target.closest(".step")); });
+    fw.addEventListener("click", function(e){ go(e.target.closest(".fn")); });
     fw.addEventListener("keydown", function(e){
-      if (e.key === "Enter" || e.key === " "){ var g = e.target.closest(".step"); if (g){ e.preventDefault(); go(g); } }
+      if (e.key === "Enter" || e.key === " "){ var g = e.target.closest(".fn"); if (g){ e.preventDefault(); go(g); } }
     });
   }
 
@@ -633,14 +689,14 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
       var cb = $("codebox");
       cb.scrollTop = Math.max(0, from.offsetTop - 70);
     }
-    if (line > 0 && !$("flowwrap").hidden){
-      var hit = null;
-      Object.keys(FLOWS).forEach(function(k){
-        FLOWS[k].nodes.forEach(function(n){ if (n.p === path && n.l === line && !hit) hit = k; });
-      });
-      if (hit) tab(hit);
-    }
-    document.querySelectorAll("#flowwrap .step").forEach(function(g){
+    var hit = line > 0 ? flowNode(path, line) : null;
+    var fs = $("fstep");
+    if (hit){
+      fs.innerHTML = '<b>' + FLOWS[hit.k].name + ' ' + (hit.i + 1) + '단계 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + esc(hit.n.w) + '<br><em>왜</em>' + esc(hit.n.y);
+      fs.className = "fstep on";
+      if (!$("flowwrap").hidden) tab(hit.k);
+    } else { fs.className = "fstep"; }
+    document.querySelectorAll("#flowwrap .fn").forEach(function(g){
       g.classList.toggle("on", g.getAttribute("data-p") === path && +g.getAttribute("data-l") === line);
     });
     document.querySelectorAll("#tree a.f").forEach(function(a){
