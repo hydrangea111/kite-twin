@@ -126,7 +126,9 @@ text .t1.mono{font-family:var(--mono);font-size:12.5px}
 .fstep.on{display:block}
 .fstep b{display:block;margin-bottom:2px;color:var(--blue-d)}
 .fstep em{font-style:normal;font-weight:700;font-size:12px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
-.code .ln.hl{background:#fff4c2}
+.prow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dl{border:1px solid var(--blue);background:#fff;color:var(--blue-d);border-radius:7px;padding:4px 12px;font:600 13px var(--sans);cursor:pointer}
+.dl:hover{background:var(--blue);color:#fff}
 .viewer{display:grid;grid-template-columns:420px 1fr;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff;min-height:560px;margin-top:10px}
 .side{border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;max-height:760px}
 .side input{margin:10px;padding:9px 12px;border:1px solid var(--line2);border-radius:8px;font:14px var(--sans);outline:none;background:#fff}
@@ -169,10 +171,8 @@ footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
   <a class="l" href="#overview">연구 개요</a>
   <a class="l" href="#results">결과</a>
   <a class="l" href="#architecture">시스템 구조</a>
-  <a class="l" href="#run">실행 방법</a>
   <a class="l" href="#code">코드 열람</a>
-  <span class="sp"></span>
-  <a class="gh" href="https://github.com/hydrangea111/kite-twin">GitHub</a>
+  <a class="l" href="#run">실행 방법</a>
 </div></div>
 
 <div class="hero" id="top"><div class="wrap">
@@ -183,7 +183,7 @@ footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
   <div class="btns">
     <a class="btn p" href="#code">코드 열람하기</a>
     <a class="btn" href="#architecture">시스템 구조 보기</a>
-    <a class="btn" href="https://github.com/hydrangea111/kite-station/releases/latest">지상국 모니터 내려받기</a>
+    <a class="btn" href="https://dh-kite-station.web.app/">지상국 모니터 내려받기</a>
   </div>
 </div></div>
 
@@ -353,15 +353,38 @@ footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
   </div>
 </section>
 
-<section id="run">
+
+
+<section id="code">
   <div class="sec-no">04</div>
+  <h2>코드 열람</h2>
+  <p>소스 파일 74개(약 1.5만 줄)를 이 페이지에서 바로 읽을 수 있다. 왼쪽의 순서도에서 코드 블록을 누르면 해당 코드가 열리고, 「파일」 탭에서는 파일을 직접 고르거나 이름으로 검색한다. 파일 이름 옆의 다운로드 버튼으로 파일을 내려받을 수 있다.</p>
+  <div class="viewer" id="viewer">
+    <div class="side">
+      <div class="tabs" id="tabs"></div>
+      <div class="flowwrap" id="flowwrap"></div>
+      <input id="q" type="search" placeholder="파일 이름 검색 (예: model, bridge)" aria-label="파일 검색" hidden>
+      <div class="tree" id="tree" hidden>불러오는 중…</div>
+    </div>
+    <div class="main">
+      <div class="fhead">
+        <div class="prow"><div class="p" id="fpath">—</div><button type="button" class="dl" id="dl">다운로드</button></div>
+        <div class="d" id="fdesc"></div>
+        <div class="m" id="fmeta"></div>
+        <div class="fstep" id="fstep"></div>
+      </div>
+      <div class="code" id="codebox"><pre><code class="hljs" id="codeel"></code></pre></div>
+    </div>
+  </div>
+</section>
+
+<section id="run">
+  <div class="sec-no">05</div>
   <h2>실행 방법</h2>
   <p>Python 3.11 이상이 필요하며, 의존 패키지는 <code>requirements.txt</code>에 있다.</p>
   <div class="runs">
-    <div class="run"><h3>설치</h3><p>저장소를 내려받고 패키지를 설치한다.</p>
-<pre class="cmd">git clone https://github.com/hydrangea111/kite-twin
-cd kite-twin
-pip install -r requirements.txt</pre></div>
+    <div class="run"><h3>설치</h3><p>위 코드 열람에서 파일을 내려받아 같은 폴더 구조로 두고, 패키지를 설치한다.</p>
+<pre class="cmd">pip install -r requirements.txt</pre></div>
     <div class="run"><h3>시뮬레이션 실행</h3><p>전체 연구 스크립트를 순서대로 실행한다. <code>--quick</code>은 느린 변화 시험을 제외한다(약 2분).</p>
 <pre class="cmd">python sim/run_all.py --quick
 python sim/run_all.py elasticity   <span class="c"># 지정한 것만</span></pre></div>
@@ -390,40 +413,16 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   </ol>
 </section>
 
-<section id="code">
-  <div class="sec-no">05</div>
-  <h2>코드 열람</h2>
-  <p>저장소의 소스 파일 74개(약 1.5만 줄)를 이 페이지에서 바로 읽을 수 있다. 왼쪽의 순서도에서 단계를 누르면 해당 코드의 줄로 이동하고, 「파일」 탭에서는 파일을 직접 고르거나 이름으로 검색한다. 주소의 <code>#code/경로:줄</code> 부분을 공유하면 같은 위치가 열린다.</p>
-  <div class="viewer" id="viewer">
-    <div class="side">
-      <div class="tabs" id="tabs"></div>
-      <div class="flowwrap" id="flowwrap"></div>
-      <input id="q" type="search" placeholder="파일 이름 검색 (예: model, bridge)" aria-label="파일 검색" hidden>
-      <div class="tree" id="tree" hidden>불러오는 중…</div>
-    </div>
-    <div class="main">
-      <div class="fhead">
-        <div class="p" id="fpath">—</div>
-        <div class="d" id="fdesc"></div>
-        <div class="m" id="fmeta"></div>
-        <div class="fstep" id="fstep"></div>
-      </div>
-      <div class="code" id="codebox"><pre><code class="hljs" id="codeel"></code></pre></div>
-    </div>
-  </div>
-</section>
-
 </div>
 
 <footer><div class="wrap">
   <div>kite-twin · 방패연 계류줄 탄성 연구<br>모든 수치는 시뮬레이션 결과이다.</div>
-  <div><a href="https://github.com/hydrangea111/kite-twin">저장소</a> · <a href="https://dh-kite-station.web.app/">지상국 모니터 소개</a> · <a href="https://github.com/hydrangea111/kite-station/releases/latest">KiteStation 내려받기</a></div>
+  <div><a href="https://dh-kite-station.web.app/">지상국 모니터 내려받기</a></div>
 </div></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
 (function(){
-  var REPO = "https://github.com/hydrangea111/kite-twin";
   var DATA = null, current = null;
   var $ = function(id){ return document.getElementById(id); };
   var DEFAULT = "sim/model.py";
@@ -598,7 +597,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
 
   function flowHtml(spec){
     return '<div class="goal">' + esc(spec.goal) + '</div>' + flowSvg(spec) +
-      '<div class="hint">상자는 코드 블록 하나입니다. 누르면 설명이 나오고, 오른쪽 코드에 그 블록 전체가 표시됩니다.</div>';
+      '<div class="hint">상자는 코드 블록 하나입니다. 누르면 설명이 나오고, 오른쪽에 그 코드가 열립니다.</div>';
   }
 
   function buildTabs(){
@@ -636,9 +635,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     var f = DATA[path]; current = path;
     $("fpath").textContent = path;
     $("fdesc").textContent = f.desc || "";
-    $("fmeta").innerHTML = '<span>' + f.lines + '줄</span><span>' + f.lang + '</span>' +
-      '<a href="' + REPO + '/blob/main/' + path + '" target="_blank" rel="noopener">GitHub에서 보기</a>' +
-      '<a href="' + REPO + '/raw/main/' + path + '" target="_blank" rel="noopener">원본</a>';
+    $("fmeta").innerHTML = '<span>' + f.lines + '줄</span><span>' + f.lang + '</span>';
     var res;
     try { res = f.lang === "plaintext" ? {value: esc(f.text)} : hljs.highlight(f.text, {language: f.lang, ignoreIllegals: true}); }
     catch (e) { res = {value: esc(f.text)}; }
@@ -647,7 +644,6 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     $("codebox").scrollTop = 0;
     var kids = $("codeel").children;
     if (line > 0 && kids[line - 1]){
-      if (end >= line) for (var i = line - 1; i < Math.min(end, kids.length); i++) kids[i].classList.add("hl");
       $("codebox").scrollTop = Math.max(0, kids[line - 1].offsetTop - 70);
     }
     var hit = flowNode(path, line);
@@ -665,6 +661,16 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     });
     var on = document.querySelector("#tree a.f.on");
     if (on){ var d = on.parentNode; while (d && d.id !== "tree"){ if (d.tagName === "DETAILS") d.open = true; d = d.parentNode; } }
+  }
+
+  function download(){
+    if (!DATA || !current) return;
+    var name = current.split("/").pop();
+    var blob = new Blob([DATA[current].text], {type: "text/plain;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   }
 
   function route(){
@@ -695,6 +701,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   fetch("data/code.json").then(function(r){ return r.json(); }).then(function(d){
     DATA = d;
     buildTabs(); tab("main");
+    $("dl").addEventListener("click", download);
     $("tree").innerHTML = buildTree(Object.keys(d));
     $("q").addEventListener("input", function(e){ filter(e.target.value); });
     route.first = !(location.hash || "").startsWith("#code/") ? true : false;
