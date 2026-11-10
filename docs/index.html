@@ -150,7 +150,7 @@ text .t1.mono{font-family:var(--mono);font-size:12.5px}
 .fhead{padding:14px 18px;border-bottom:1px solid var(--line);background:#fff}
 .fhead .p{font:500 14px var(--mono);color:var(--ink);word-break:break-all}
 .fhead .d{font-size:14.5px;color:var(--mute);margin-top:3px}
-.fhead .m{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--faint);flex-wrap:wrap}
+.fhead .m{display:flex;gap:10px;margin-left:auto;font-size:13px;color:var(--faint);white-space:nowrap}
 .fhead .m a{color:var(--blue-d)}
 .code{overflow:auto;max-height:680px;background:#fff;position:relative}
 .code pre{margin:0;padding:12px 0;font:13px/1.65 var(--mono);counter-reset:ln}
@@ -371,9 +371,8 @@ footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
     </div>
     <div class="main">
       <div class="fhead">
-        <div class="prow"><div class="p" id="fpath">—</div><button type="button" class="dl" id="dl" title="이 파일 내려받기" aria-label="이 파일 내려받기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></div>
+        <div class="prow"><div class="p" id="fpath">—</div><div class="m" id="fmeta"></div><button type="button" class="dl" id="dl" title="이 파일 내려받기" aria-label="이 파일 내려받기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></div>
         <div class="d" id="fdesc"></div>
-        <div class="m" id="fmeta"></div>
         <div class="fstep" id="fstep"></div>
       </div>
       <div class="code" id="codebox"><pre><code class="hljs" id="codeel"></code></pre></div>
