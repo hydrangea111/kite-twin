@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>방패연 지상국 모니터</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>방패연 계류 시스템</h1>
+    <span class="sub">지상국 모니터</span>
+  </div>
+  <span class="badge" id="mode">연결 중…</span>
+  <div class="seg" id="sourceSeg"></div>
+  <button class="mini" id="portBtn" title="연결할 포트 선택">포트</button>
+  <button class="mini" id="logBtn" title="기록된 비행 재생">기록</button>
+  <span class="rec" id="recState" hidden><span class="pip"></span><span id="recText"></span></span>
+  <div class="grow"></div>
+  <div class="statgroup">
+    <div class="stat"><div class="k">고도</div><div class="v" id="sAlt">—</div></div>
+    <div class="stat"><div class="k">고도각</div><div class="v" id="sElev">—</div></div>
+    <div class="stat"><div class="k">장력</div><div class="v" id="sTen">—</div></div>
+    <div class="stat"><div class="k">풍속</div><div class="v" id="sWind">—</div></div>
+    <div class="stat"><div class="k">수신</div><div class="v" id="sRate">—</div></div>
+  </div>
+  <div class="link-state"><span class="dot" id="dot"></span><span id="connText">대기</span></div>
+</div>
+
+<div class="shell">
+
+  <div class="left">
+    <!-- ─────────────── 3D 디지털 트윈 ─────────────── -->
+    <section class="card flush">
+      <header>
+        <h2>디지털 트윈</h2>
+        <span class="note" id="twinNote"></span>
+      </header>
+      <div class="body" style="position:relative">
+       <div class="panes" id="panes">
+        <div class="viewport" id="viewport">
+          <div class="paneTag" id="tagReal">실측</div>
+          <div class="hud tl">
+            <div class="cap">고도</div>
+            <div class="big" id="hAlt">—</div>
+            <div class="row" style="margin-top:7px">고도각 <b id="hElev">—</b></div>
+            <div class="row">경사거리 <b id="hSpan">—</b></div>
+          </div>
+          <div class="hud tr" style="top:46px">
+            <div class="row">장력 <b id="hTen">—</b></div>
+            <div class="row">흔들림 <b id="hSwing">—</b></div>
+            <div class="row">바람 <b id="hWind">—</b></div>
+          </div>
+          <div class="viewctl">
+            <button data-view="wide" class="on">전경</button>
+            <button data-view="side">측면</button>
+            <button data-view="top">평면</button>
+            <button data-view="chase">후방</button>
+            <button id="spin">회전</button>
+            <button id="split" hidden>분할</button>
+            <button id="link" hidden>연동</button>
+          </div>
+          <div class="inferred" id="inferred">방위각은 탑재물 yaw에서 추정 — 측정값 아님</div>
+        </div>
+        <div class="viewport" id="viewportPred" hidden>
+          <div class="paneTag pred">모델 예측</div>
+          <div class="hud tl">
+            <div class="cap">예측 고도</div>
+            <div class="big" id="pAlt">—</div>
+            <div class="row" style="margin-top:7px">고도각 <b id="pElev">—</b></div>
+            <div class="row">장력 <b id="pTen">—</b></div>
+          </div>
+          <div class="divbar" id="divbar"></div>
+        </div>
+       </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 시계열 ─────────────── -->
+    <section class="card">
+      <header><h2>시계열</h2><span class="note">최근 60초</span></header>
+      <div class="body"><canvas id="strip" class="strip" height="168"></canvas></div>
+    </section>
+  </div>
+
+  <div class="right">
+
+    <section class="card" id="cardSim" hidden>
+      <header><h2>시뮬레이터 설정</h2>
+        <span class="note"><button class="mini" id="simReset">기본값</button></span></header>
+      <div class="body"><div id="simFields"></div>
+        <button class="apply" id="simApply">적용 · 재적분</button>
+        <div class="simnote" id="simStatus"></div>
+      </div>
+    </section>
+
+    <section class="card" id="cardDiv" hidden>
+      <header><h2>실측 − 예측</h2><span class="note">디지털 트윈</span></header>
+      <div class="body">
+        <table class="kv">
+          <tr><td>고도각</td><td id="dElev">—</td></tr>
+          <tr><td>장력</td><td id="dTen">—</td></tr>
+          <tr><td>고도</td><td id="dZ">—</td></tr>
+        </table>
+        <div class="simnote">괴리가 한쪽으로 쏠리면 C<sub>L</sub>·C<sub>D</sub> 또는
+          풍속계 교정을 의심한다. 양쪽으로 흔들리면 난류다.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>탑재물 자세</h2><span class="note" id="attNote"></span></header>
+      <div class="body">
+        <svg id="att" viewBox="0 0 300 168" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="tiles" style="grid-template-columns:1fr 1fr 1fr; margin-top:9px">
+          <div class="tile"><div class="k">Roll</div><div class="v" id="vRoll">—</div></div>
+          <div class="tile"><div class="k">Pitch</div><div class="v" id="vPitch">—</div></div>
+          <div class="tile"><div class="k">Yaw</div><div class="v" id="vYaw">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>구조 하중</h2></header>
+      <div class="body">
+        <div class="tiles">
+          <div class="tile" id="tTen"><div class="k">현재 장력</div>
+            <div class="v" id="vTen">—<u>N</u></div></div>
+          <div class="tile"><div class="k">최대 (60초)</div>
+            <div class="v" id="vTenMax">—<u>N</u></div></div>
+        </div>
+        <div class="meter">
+          <div class="track"><div class="fill" id="barTen" style="width:0%"></div></div>
+          <div class="scale"><span>0</span><span id="loadNote">설계하중 50 N</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>보정</h2><span class="note">원시 → 실제</span></header>
+      <div class="body">
+        <table class="kv">
+          <tr><td>늘어남<span class="sub">r = L₀(1 + T/EA)</span></td><td id="cStretch">—</td></tr>
+          <tr><td>처짐각<span class="sub">δ = wL·cosθ / 2T</span></td><td id="cSag">—</td></tr>
+          <tr><td>측정각 → 현각</td><td id="cChord">—</td></tr>
+          <tr><td>보정이 바꾼 고도</td><td id="cAlt">—</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>실시간 식별</h2><span class="gate" id="gate"><span class="pip"></span><span id="gateText">—</span></span></header>
+      <div class="body">
+        <table class="kv">
+          <tr><td>C<sub>L</sub></td><td id="iCl">—</td></tr>
+          <tr><td>C<sub>D</sub></td><td id="iCd">—</td></tr>
+          <tr><td>L/D<span class="sub">면적 오차에 영향 없음</span></td><td id="iLd">—</td></tr>
+          <tr><td>역산 풍속<span class="sub">장력 기준 · 연 고도의 바람</span></td><td id="iWind">—</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>발전량</h2><span class="note" id="pvNote"></span></header>
+      <div class="body" id="pvBody"><div class="empty">IV 스윕 대기 중</div></div>
+    </section>
+
+    <section class="card">
+      <header><h2>링크</h2></header>
+      <div class="body">
+        <table class="kv">
+          <tr><td>수신 / 유실</td><td id="lRx">—</td></tr>
+          <tr><td>IMU 지연</td><td id="lImu">—</td></tr>
+          <tr><td>GPS</td><td id="lGps">—</td></tr>
+          <tr><td>연 제원</td><td id="lKite" class="muted">—</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="cardSensor" hidden>
+      <header><h2>센서 교정값</h2><span class="note" id="sensorSrc"></span></header>
+      <div class="body"><table class="kv" id="sensorTable"></table></div>
+    </section>
+
+    <footer class="tips">
+      <code>--serial COM5</code> 실측 · <code>--replay log.csv</code> 재생 ·
+      <code>--sim</code> 2체 모델<br>
+      3D에서 드래그로 회전, 휠로 확대, Shift+드래그로 이동.
+    </footer>
+
+  </div>
+</div>
+
+<div class="modal" id="portModal" hidden>
+  <div class="sheet">
+    <header>
+      <h3>연결할 포트</h3>
+      <button class="mini" id="portRefresh">다시 찾기</button>
+      <button class="mini" id="portClose">닫기</button>
+    </header>
+    <div id="portList" class="portlist"></div>
+    <div class="manual">
+      <label for="portManual">직접 입력</label>
+      <div class="row">
+        <input id="portManual" type="text" spellcheck="false"
+               placeholder="COM5 또는 socket://127.0.0.1:5577">
+        <button class="apply narrow" id="portConnect">연결</button>
+      </div>
+      <div class="simnote" id="portNote">
+        <code>socket://</code> 주소는 <code>fake_rig.py</code> 입니다 — 하드웨어 없이
+        전 구간을 시험할 때 씁니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="logModal" hidden>
+  <div class="sheet">
+    <header>
+      <h3>기록된 비행</h3>
+      <button class="mini" id="logRefresh">다시 찾기</button>
+      <button class="mini" id="logClose">닫기</button>
+    </header>
+    <div id="logList" class="portlist"></div>
+    <div class="simnote">
+      <code>station/logs</code> 에 펌웨어와 같은 CSV 형식으로 쌓입니다.
+      바람도 장비도 없는 곳에서 그대로 다시 볼 수 있고, 보정식을 고치면
+      같은 기록에서 값이 다시 계산됩니다.
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

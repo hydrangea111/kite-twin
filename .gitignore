@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.pio/
+build/
+dist/
+station/logs/
+station/export/
+*.log
+desktop.ini

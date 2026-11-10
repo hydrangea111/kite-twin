@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>방패연 디지털 트윈</title>
+<meta name="description" content="바람·라인 길이·연 치수를 바꿔 가며 계류된 방패연의 고도각, 장력, 줄 처짐과 탑재물 발전량을 즉시 보는 시뮬레이터">
+<!-- 파비콘: 붉은 타일 + 흰 방패연 + 방구멍. 지상국 모니터(청색)와 한눈에 구분된다. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%23b4322c'/%3E%3Cpath%20d='M9 8h46l-4 43H13z'%20fill='%23fff'/%3E%3Ccircle%20cx='32'%20cy='29'%20r='10'%20fill='%23b4322c'/%3E%3C/svg%3E">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+
+<style>
+  /* Layout: instrument panel. Scene left, controls right, tension trace along
+     the bottom. Stacks to one column on a phone. */
+  :root {
+    --paper: #eef0f1;
+    --panel: #f8f9fa;
+    --ink: #1c2124;
+    --ink-soft: #5d6a71;
+    --rule: #d2d8db;
+    --kite: #b4322c;          /* the red ring on a 방패연 */
+    --data: #2f5d7c;
+    --warn: #a8700f;
+    --ok: #2e6b4f;
+    --sky-top: #dce5ea;
+    --sky-bottom: #eef1f2;
+    --display: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15191c;
+      --panel: #1d2226;
+      --ink: #e6eaec;
+      --ink-soft: #94a3ab;
+      --rule: #333c42;
+      --kite: #e2685f;
+      --data: #7fb4d6;
+      --warn: #d9a441;
+      --ok: #5fb98c;
+      --sky-top: #1a2228;
+      --sky-bottom: #141a1e;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #15191c;
+    --panel: #1d2226;
+    --ink: #e6eaec;
+    --ink-soft: #94a3ab;
+    --rule: #333c42;
+    --kite: #e2685f;
+    --data: #7fb4d6;
+    --warn: #d9a441;
+    --ok: #5fb98c;
+    --sky-top: #1a2228;
+    --sky-bottom: #141a1e;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--display);
+    padding-block: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+  h1 { font-size: 1.35rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .sub { color: var(--ink-soft); font-size: 0.82rem; margin: 0; }
+
+  .chips { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    padding: 4px 9px; border-radius: 2px; border: 1px solid currentColor;
+    letter-spacing: 0.02em;
+  }
+  .chip.ok { color: var(--ok); }
+  .chip.warn { color: var(--warn); }
+  .chip.bad { color: var(--kite); }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--rule);
+    border-radius: 3px; padding: 14px; min-width: 0;
+  }
+  .card h2 {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+  .card-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .card-head h2 { margin: 0; }
+
+  button {
+    margin-left: auto; font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.04em; padding: 3px 9px; cursor: pointer;
+    color: var(--ink-soft); background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 2px;
+  }
+  button:hover { color: var(--ink); border-color: var(--ink-soft); }
+  button:active { background: var(--rule); }
+
+  svg { display: block; width: 100%; height: auto; max-width: 100%; }
+
+  .readouts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .ro { background: var(--panel); padding: 9px 10px; min-width: 0; }
+  .ro .k { font-size: 0.66rem; color: var(--ink-soft); letter-spacing: 0.05em; text-transform: uppercase; }
+  .ro .v { font-family: var(--mono); font-size: 1.02rem; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .ro .v small { font-size: 0.7rem; color: var(--ink-soft); font-weight: 400; }
+  .ro.alert .v { color: var(--kite); }
+
+  .ctl { display: grid; gap: 11px; }
+  .row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px; }
+  .row label { font-size: 0.78rem; }
+  .row output { font-family: var(--mono); font-size: 0.78rem; font-variant-numeric: tabular-nums; color: var(--data); }
+  input[type=range] { width: 100%; accent-color: var(--data); margin: 0; }
+  select {
+    width: 100%; font-family: var(--display); font-size: 0.8rem; padding: 5px 7px;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 2px;
+  }
+  .toggles { display: flex; flex-wrap: wrap; gap: 12px; }
+  .toggles label { font-size: 0.78rem; display: flex; align-items: center; gap: 5px; }
+  input[type=checkbox] { accent-color: var(--data); }
+
+  .note { font-size: 0.74rem; color: var(--ink-soft); line-height: 1.55; margin: 10px 0 0; }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 12px 0; }
+
+  :is(input, select, button):focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>방패연 디지털 트윈</h1>
+      <p class="sub">지상 윈치 · 명주실 계류 · 페로브스카이트 탑재물</p>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chipFly">—</span>
+      <span class="chip" id="chipLoad">—</span>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="card">
+      <h2>측면도</h2>
+      <svg id="scene" viewBox="0 0 660 430" role="img" aria-label="연, 계류줄, 탑재물의 측면 모식도">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--sky-top)"/>
+            <stop offset="100%" stop-color="var(--sky-bottom)"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="660" height="430" fill="url(#sky)"/>
+        <g id="grid" stroke="var(--rule)" stroke-width="1" opacity="0.55"></g>
+        <g id="gridLabels" fill="var(--ink-soft)" font-size="9" font-family="IBM Plex Mono, monospace"></g>
+        <g id="windArrows" stroke="var(--data)" stroke-width="1.4" opacity="0.5" fill="none"></g>
+        <g id="sunGroup">
+          <circle id="sunDisc" r="10" fill="var(--warn)" opacity="0.85"/>
+          <g id="sunRays" stroke="var(--warn)" stroke-width="1.3" opacity="0.7"></g>
+        </g>
+        <line id="sunRay" stroke="var(--warn)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>
+        <line x1="0" y1="392" x2="660" y2="392" stroke="var(--ink)" stroke-width="1.5"/>
+        <path id="tetherPath" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+        <rect id="winch" x="46" y="374" width="30" height="18" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>
+        <circle id="winchHub" cx="61" cy="383" r="4.5" fill="none" stroke="var(--ink)" stroke-width="1.4"/>
+        <g id="kite">
+          <polygon id="kiteBody" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>
+          <circle id="kiteVent" fill="var(--paper)" stroke="var(--kite)" stroke-width="2.6"/>
+          <line id="kiteSpine" stroke="var(--ink)" stroke-width="1" opacity="0.65"/>
+        </g>
+        <line id="drop" stroke="var(--ink)" stroke-width="1.2"/>
+        <g id="panelGroup">
+          <rect id="panel" fill="var(--data)" stroke="var(--ink)" stroke-width="1.2" rx="1"/>
+          <line id="panelRib" stroke="var(--panel)" stroke-width="1" opacity="0.7"/>
+        </g>
+        <text id="altTag" fill="var(--ink-soft)" font-size="10" font-family="IBM Plex Mono, monospace"></text>
+        <g id="tags" fill="var(--ink-soft)" font-size="10" font-family="IBM Plex Sans KR, sans-serif"></g>
+      </svg>
+      <p class="note" id="sceneNote"></p>
+      <p class="note">패널은 목줄에 한 점으로 매달려 있어서 바람의 항력만큼 뒤로 기웁니다. 그 기울기가 그대로 태양 입사각이 되고, 발전량이 거기 따라 움직입니다 — 그래서 자세를 같이 기록하지 않으면 발전량 데이터를 해석할 수 없습니다. 목줄과 패널은 실제 크기가 화면에서 1픽셀이 안 되어 과장해 그렸고, 기울기 각도만 실제 값입니다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>조작</h2>
+        <button type="button" id="reset">초기값으로</button>
+      </div>
+      <div class="ctl">
+        <div class="row"><label for="wind">기준 풍속 (10 m 높이)</label><output id="windOut"></output></div>
+        <input type="range" id="wind" min="2" max="12" step="0.1" value="6">
+
+        <div class="row"><label for="length">라인 길이</label><output id="lengthOut"></output></div>
+        <input type="range" id="length" min="5" max="100" step="1" value="50">
+
+        <div class="row"><label for="tether">계류줄</label></div>
+        <select id="tether">
+          <option value="silk" selected>명주실 — EA 3000 N</option>
+          <option value="dyneema">다이니마 — EA 15000 N</option>
+          <option value="rigid">강체 근사 — EA 150000 N</option>
+        </select>
+
+        <div class="row"><label for="area">날개 면적</label><output id="areaOut"></output></div>
+        <input type="range" id="area" min="0.2" max="1.4" step="0.01" value="0.5">
+
+        <div class="row"><label for="cl">양력계수 CL</label><output id="clOut"></output></div>
+        <input type="range" id="cl" min="0.3" max="1.3" step="0.01" value="0.75">
+
+        <div class="row"><label for="cd">항력계수 CD</label><output id="cdOut"></output></div>
+        <input type="range" id="cd" min="0.15" max="0.7" step="0.01" value="0.38">
+
+        <div class="row"><label for="payload">탑재물 질량</label><output id="payloadOut"></output></div>
+        <input type="range" id="payload" min="0.05" max="1.2" step="0.01" value="0.30">
+
+        <div class="row"><label for="sun">태양 고도</label><output id="sunOut"></output></div>
+        <input type="range" id="sun" min="10" max="90" step="1" value="55">
+
+        <hr>
+        <div class="toggles">
+          <label><input type="checkbox" id="turb" checked> 난류</label>
+          <label><input type="checkbox" id="shear" checked> 경계층</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>상태</h2>
+    <div class="readouts">
+      <div class="ro"><div class="k">고도각</div><div class="v" id="roElev">—</div></div>
+      <div class="ro"><div class="k">탑재물 고도</div><div class="v" id="roAlt">—</div></div>
+      <div class="ro"><div class="k">줄 장력</div><div class="v" id="roTension">—</div></div>
+      <div class="ro"><div class="k">연이 받는 바람</div><div class="v" id="roWind">—</div></div>
+      <div class="ro"><div class="k">줄 늘어남</div><div class="v" id="roStretch">—</div></div>
+      <div class="ro"><div class="k">줄 처짐각</div><div class="v" id="roSag">—</div></div>
+      <div class="ro"><div class="k">종방향 고유진동</div><div class="v" id="roFreq">—</div></div>
+      <div class="ro"><div class="k">패널 입사각</div><div class="v" id="roInc">—</div></div>
+    </div>
+    <p class="note" id="estNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>장력 기록 — 최근 60초</h2>
+    <svg id="trace" viewBox="0 0 660 150" role="img" aria-label="시간에 따른 줄 장력 그래프">
+      <g id="traceGrid" stroke="var(--rule)" stroke-width="1"></g>
+      <g id="traceLabels" fill="var(--ink-soft)" font-size="9" font-family="IBM Plex Mono, monospace"></g>
+      <line id="designLine" stroke="var(--kite)" stroke-width="1" stroke-dasharray="4 4" opacity="0.8"/>
+      <text id="designLabel" fill="var(--kite)" font-size="9" font-family="IBM Plex Mono, monospace">설계하중 47 N</text>
+      <path id="tracePath" fill="none" stroke="var(--data)" stroke-width="1.5"/>
+      <circle id="traceHead" r="2.6" fill="var(--data)"/>
+    </svg>
+    <p class="note">난류는 Ornstein-Uhlenbeck 과정(강도 15%, 상관시간 L/U)으로 생성합니다. 장력은 준정적으로 평형값을 따라갑니다 — 줄의 종방향 진동(1.8 Hz)보다 난류가 훨씬 느려서 성립하는 근사입니다.</p>
+  </div>
+
+  <div class="card">
+    <h2>읽는 법</h2>
+    <p class="note">
+      <b>장력은 윈치로 못 바꿉니다.</b> 라인 길이를 5 m에서 100 m까지 끌어보세요 — 장력은 거의 그대로지만 고도는 크게 바뀝니다. 정상상태 장력은 연의 공력 평형이 정하고, 윈치가 쥐고 있는 건 거리뿐입니다.<br><br>
+      <b>경계층을 끄고 켜보세요.</b> 켜면 연이 자기 고도의 바람을 맞습니다. 라인이 짧을수록 느린 공기층에 갇혀서, 같은 기준 풍속에도 잘 안 뜹니다.<br><br>
+      <b>명주실에서 강체로 바꿔보세요.</b> 늘어남이 10 cm대에서 1 mm대로 줄지만, 그만큼 돌풍 충격을 흡수할 여유도 사라집니다.<br><br>
+      모든 수치는 <code>params.py</code>의 추정치 기반입니다. CL·CD는 아직 ±40% 불확실하고, 비행 로그로 식별해야 좁혀집니다.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var RHO = 1.225, G = 9.81, CD_CYL = 1.1;
+  var TETHERS = {
+    silk:    { EA: 3000,   perM: 0.0010, dia: 0.0010, brk: 540, name: "명주실" },
+    dyneema: { EA: 15000,  perM: 0.0006, dia: 0.0008, brk: 540, name: "다이니마" },
+    rigid:   { EA: 150000, perM: 0.0010, dia: 0.0010, brk: 540, name: "강체 근사" }
+  };
+  var CANOPY = 0.15, SUSPENSION = 0.5, PANEL_AREA = 0.05, PANEL_CD = 1.2;
+  var DESIGN_LOAD = 47;
+  var REF_HEIGHT = 10, ALPHA = 0.20, Z_MIN = 0.5;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function windAt(height, reference, useShear) {
+    if (!useShear) return reference;
+    return reference * Math.pow(Math.max(height, Z_MIN) / REF_HEIGHT, ALPHA);
+  }
+
+  // Force balance: T*rhat = aero + line load + gravity. The line load depends
+  // on the direction we are solving for, so iterate; it converges in a few
+  // passes because that term is small.
+  function equilibrium(s, tether, speed, length) {
+    var mass = CANOPY + s.payload;
+    var q = 0.5 * RHO * speed * speed * s.area;
+    var theta = Math.atan2(q * s.cl - mass * G, q * s.cd);
+    var T = Math.hypot(q * s.cd, q * s.cl - mass * G);
+
+    for (var i = 0; i < 24; i++) {
+      var c = Math.cos(theta), sn = Math.sin(theta);
+      var normal = speed * Math.abs(sn);
+      var drag = 0.25 * RHO * normal * normal * tether.dia * length * CD_CYL;
+      var lx = drag * sn;
+      var lz = -drag * c - 0.5 * tether.perM * length * G;
+      var nx = q * s.cd + lx;
+      var nz = q * s.cl - mass * G + lz;
+      var nt = Math.hypot(nx, nz);
+      if (nt < 1e-9) break;
+      theta = Math.atan2(nz, nx);
+      T = nt;
+    }
+
+    var radius = length * (1 + T / tether.EA);
+    return {
+      theta: theta, tension: T, radius: radius,
+      altitude: radius * Math.sin(theta),
+      stretch: radius - length,
+      sag: T > 1e-9 ? 0.5 * tether.perM * length * G * Math.cos(theta) / T : 0,
+      freq: Math.sqrt((tether.EA / length) / mass) / (2 * Math.PI),
+      flying: theta > 0
+    };
+  }
+
+  // Altitude and wind set each other inside the boundary layer, so settle both.
+  function solve(s, tether, reference, length, useShear) {
+    var speed = reference, eq = null;
+    for (var i = 0; i < 40; i++) {
+      eq = equilibrium(s, tether, speed, length);
+      if (!eq.flying) return { eq: eq, speed: speed };
+      var next = windAt(eq.altitude, reference, useShear);
+      if (Math.abs(next - speed) < 1e-6) { speed = next; break; }
+      speed = speed + 0.5 * (next - speed);
+    }
+    return { eq: eq, speed: speed };
+  }
+
+  function hangAngle(s, speed) {
+    var drag = 0.5 * RHO * speed * speed * PANEL_AREA * PANEL_CD;
+    return Math.atan2(drag, s.payload * G);
+  }
+
+  // The physics is cheap; rebuilding SVG markup is not. Run the model at a
+  // fixed 20 Hz instead of once per frame, sample the trace at 5 Hz so the
+  // 60-second window really holds 60 seconds, and rebuild the static scenery
+  // only when the inputs it depends on change.
+  var SIM_HZ = 20, SAMPLE_HZ = 5, TRACE_SECONDS = 60;
+  var TRACE_POINTS = SAMPLE_HZ * TRACE_SECONDS;
+
+  var state = {
+    u: 0, tau: 10, history: [], last: performance.now(),
+    acc: 0, sampleAcc: 0, gridKey: "", arrowKey: "", traceKey: ""
+  };
+
+  function readControls() {
+    return {
+      reference: +$("wind").value,
+      length: +$("length").value,
+      tetherKey: $("tether").value,
+      area: +$("area").value,
+      cl: +$("cl").value,
+      cd: +$("cd").value,
+      payload: +$("payload").value,
+      sun: +$("sun").value,
+      turb: $("turb").checked,
+      shear: $("shear").checked
+    };
+  }
+
+  function fmt(v, d) { return (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d); }
+
+  function drawScene(s, tether, r, speed, hang) {
+    var groundY = 392, anchorX = 61;
+    // Scale so the whole line fits whichever way it points. Taking only the
+    // horizontal span let a high elevation angle push the kite off the top.
+    // Fixed to the line length rather than the current angle, so the view does
+    // not rescale every time the kite moves.
+    var scale = Math.min(560, groundY - 42) / Math.max(s.length, 1);
+
+    var kx = anchorX + r.radius * Math.cos(r.theta) * scale;
+    var ky = groundY - r.radius * Math.sin(r.theta) * scale;
+    if (!r.flying) { kx = anchorX + r.radius * scale * 0.96; ky = groundY - 6; }
+
+    // Height grid, one line per 10 m, only while they fit on screen. Rebuilt
+    // only when the scale changes -- this is markup parsing, not arithmetic.
+    var stepM = s.length > 60 ? 20 : 10;
+    var gridKey = s.length + "/" + stepM;
+    if (gridKey !== state.gridKey) {
+      state.gridKey = gridKey;
+      var grid = "", labels = "";
+      for (var h = stepM; h * scale < groundY - 18; h += stepM) {
+        var y = groundY - h * scale;
+        grid += '<line x1="0" y1="' + y + '" x2="660" y2="' + y + '"/>';
+        labels += '<text x="4" y="' + (y - 3) + '">' + h + ' m</text>';
+      }
+      $("grid").innerHTML = grid;
+      $("gridLabels").innerHTML = labels;
+    }
+
+    // Arrows show the mean profile, so they follow the control and not the
+    // gust; that keeps them still enough to read.
+    var arrowKey = s.reference + "/" + s.length + "/" + (s.shear ? 1 : 0);
+    if (arrowKey !== state.arrowKey) {
+      state.arrowKey = arrowKey;
+      var arrows = "";
+      for (var a = 0; a < 5; a++) {
+        var ay = 40 + a * 62;
+        var h2 = (groundY - ay) / scale;
+        var len = 10 + 26 * Math.min(windAt(h2, s.reference, s.shear) / 12, 1);
+        arrows += '<path d="M6 ' + ay + ' h' + len + ' m-6 -4 l6 4 l-6 4"/>';
+      }
+      $("windArrows").innerHTML = arrows;
+    }
+
+    // Tether drawn as a parabola whose mid-span sag matches the sag angle.
+    var mx = (anchorX + kx) / 2, my = (groundY + ky) / 2;
+    var sagPx = r.sag * r.radius * scale / 4;
+    $("tetherPath").setAttribute("d", "M" + anchorX + " " + groundY + " Q" + mx + " " + (my + 2 * sagPx) + " " + kx + " " + ky);
+
+    var kw = Math.max(26, Math.min(60, Math.sqrt(s.area) * 66));
+    var kh = kw * 1.25;
+    var pts = [
+      [kx - kw / 2, ky - kh / 2], [kx + kw / 2, ky - kh / 2],
+      [kx + kw / 2, ky + kh / 2], [kx - kw / 2, ky + kh / 2]
+    ].map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+    $("kiteBody").setAttribute("points", pts);
+    $("kiteVent").setAttribute("cx", kx);
+    $("kiteVent").setAttribute("cy", ky);
+    $("kiteVent").setAttribute("r", kw * 0.19);
+    $("kiteSpine").setAttribute("x1", kx); $("kiteSpine").setAttribute("y1", ky - kh / 2);
+    $("kiteSpine").setAttribute("x2", kx); $("kiteSpine").setAttribute("y2", ky + kh / 2);
+
+    // Suspension drawn at a fixed length so the hang angle stays readable; the
+    // real drop is 0.5 m, far below one pixel at this scale.
+    var dropPx = 34, panelW = 30, panelH = 7;
+    var px = kx + dropPx * Math.sin(hang), py = ky + kh / 2 + dropPx * Math.cos(hang);
+    var spin = "rotate(" + (hang * 180 / Math.PI).toFixed(1) + " " + px + " " + py + ")";
+    $("drop").setAttribute("x1", kx); $("drop").setAttribute("y1", ky + kh / 2);
+    $("drop").setAttribute("x2", px); $("drop").setAttribute("y2", py);
+    $("panel").setAttribute("x", px - panelW / 2); $("panel").setAttribute("y", py);
+    $("panel").setAttribute("width", panelW); $("panel").setAttribute("height", panelH);
+    $("panelRib").setAttribute("x1", px - panelW / 2 + 2); $("panelRib").setAttribute("y1", py + panelH / 2);
+    $("panelRib").setAttribute("x2", px + panelW / 2 - 2); $("panelRib").setAttribute("y2", py + panelH / 2);
+    $("panelGroup").setAttribute("transform", spin);
+    $("panel").removeAttribute("transform");
+
+    var sunAng = s.sun * Math.PI / 180;
+    var sx = 600 - 150 * Math.cos(sunAng), sy = groundY - 300 * Math.sin(sunAng) - 10;
+    $("sunGroup").setAttribute("transform", "translate(" + sx.toFixed(1) + " " + sy.toFixed(1) + ")");
+    if (!$("sunRays").firstChild) {
+      var rays = "";
+      for (var q = 0; q < 8; q++) {
+        var ang = q * Math.PI / 4;
+        rays += '<line x1="' + (14 * Math.cos(ang)).toFixed(1) + '" y1="' + (14 * Math.sin(ang)).toFixed(1) +
+                '" x2="' + (19 * Math.cos(ang)).toFixed(1) + '" y2="' + (19 * Math.sin(ang)).toFixed(1) + '"/>';
+      }
+      $("sunRays").innerHTML = rays;
+    }
+    $("sunRay").setAttribute("x1", sx); $("sunRay").setAttribute("y1", sy);
+    $("sunRay").setAttribute("x2", px); $("sunRay").setAttribute("y2", py);
+
+    $("altTag").setAttribute("x", Math.min(kx + kw / 2 + 6, 596));
+    $("altTag").setAttribute("y", ky - kh / 2 - 4);
+    $("altTag").textContent = r.flying ? fmt(r.altitude, 1) + " m" : "";
+
+    // Label the parts. A schematic nobody can read is just decoration.
+    var tags = [
+      [86, groundY + 14, "지상국 윈치", "start"],
+      [kx - kw / 2 - 7, ky, "방패연", "end"],
+      [px + panelW / 2 + 8, py + 10, "탑재물 · 패널", "start"],
+      [sx, sy + 30, "태양", "middle"]
+    ];
+    $("tags").innerHTML = tags.map(function (t) {
+      return '<text x="' + t[0].toFixed(1) + '" y="' + t[1].toFixed(1) +
+             '" text-anchor="' + t[3] + '">' + t[2] + '</text>';
+    }).join("");
+
+    $("sceneNote").textContent = r.flying
+      ? "줄 길이 " + s.length + " m, 고도각 " + fmt(r.theta * 180 / Math.PI, 1) + "° — 수평 " + fmt(r.radius * Math.cos(r.theta), 1) + " m 떨어진 곳에 " + fmt(r.altitude, 1) + " m 높이로 떠 있습니다."
+      : "양력이 무게를 못 이깁니다. 바람을 올리거나 면적을 키우거나 탑재물을 줄이세요.";
+  }
+
+  function drawTrace() {
+    var pts = state.history;
+    var W = 660, H = 150, left = 34, right = 10, top = 10, bottom = 20;
+    var peak = DESIGN_LOAD * 1.15;
+    for (var i = 0; i < pts.length; i++) peak = Math.max(peak, pts[i] * 1.1);
+    // Quantised so the axis holds still and its markup is rebuilt rarely.
+    var maxT = Math.ceil(peak / 10) * 10;
+
+    if (maxT !== state.traceKey) {
+      state.traceKey = maxT;
+      var grid = "", labels = "";
+      for (var k = 0; k <= 4; k++) {
+        var val = maxT * k / 4;
+        var y = H - bottom - (H - top - bottom) * (k / 4);
+        grid += '<line x1="' + left + '" y1="' + y + '" x2="' + (W - right) + '" y2="' + y + '"/>';
+        labels += '<text x="4" y="' + (y + 3) + '">' + fmt(val, 0) + ' N</text>';
+      }
+      $("traceGrid").innerHTML = grid;
+      $("traceLabels").innerHTML = labels;
+
+      var dy = H - bottom - (H - top - bottom) * (DESIGN_LOAD / maxT);
+      $("designLine").setAttribute("x1", left); $("designLine").setAttribute("y1", dy);
+      $("designLine").setAttribute("x2", W - right); $("designLine").setAttribute("y2", dy);
+      $("designLabel").setAttribute("x", W - right - 86);
+      $("designLabel").setAttribute("y", dy - 4);
+    }
+
+    var d = "", n = pts.length, span = W - left - right;
+    for (var j = 0; j < n; j++) {
+      var x = left + span * (j / Math.max(n - 1, 1));
+      var y2 = H - bottom - (H - top - bottom) * Math.min(pts[j] / maxT, 1);
+      d += (j ? "L" : "M") + x.toFixed(1) + " " + y2.toFixed(1);
+    }
+    $("tracePath").setAttribute("d", d);
+    if (n) {
+      $("traceHead").setAttribute("cx", left + span);
+      $("traceHead").setAttribute("cy", H - bottom - (H - top - bottom) * Math.min(pts[n - 1] / maxT, 1));
+      $("traceHead").setAttribute("opacity", "1");
+    } else {
+      $("traceHead").setAttribute("opacity", "0");
+    }
+  }
+
+  function render(dt) {
+    var s = readControls();
+    var tether = TETHERS[s.tetherKey];
+
+    $("windOut").textContent = fmt(s.reference, 1) + " m/s";
+    $("lengthOut").textContent = s.length + " m";
+    $("areaOut").textContent = fmt(s.area, 2) + " m²";
+    $("clOut").textContent = fmt(s.cl, 2);
+    $("cdOut").textContent = fmt(s.cd, 2);
+    $("payloadOut").textContent = fmt(s.payload * 1000, 0) + " g";
+    $("sunOut").textContent = s.sun + "°";
+
+    // Ornstein-Uhlenbeck gust: right variance, right timescale.
+    if (s.turb && dt > 0) {
+      state.tau = 60 / Math.max(s.reference, 1);
+      var decay = Math.exp(-dt / state.tau);
+      var sigma = 0.15 * Math.sqrt(1 - decay * decay);
+      state.u = state.u * decay + sigma * gaussian();
+    } else if (!s.turb) {
+      state.u = 0;
+    }
+    var reference = s.reference * (1 + state.u);
+
+    var out = solve(s, tether, reference, s.length, s.shear);
+    var r = out.eq, speed = out.speed;
+    var hang = hangAngle(s, speed);
+
+    drawScene(s, tether, r, speed, hang);
+
+    $("roElev").innerHTML = r.flying ? fmt(r.theta * 180 / Math.PI, 1) + "<small>°</small>" : "—";
+    $("roAlt").innerHTML = r.flying ? fmt(r.altitude, 1) + " <small>m</small>" : "—";
+    $("roTension").innerHTML = r.flying ? fmt(r.tension, 1) + " <small>N</small>" : "—";
+    $("roWind").innerHTML = fmt(speed, 2) + " <small>m/s</small>";
+    $("roStretch").innerHTML = r.flying ? fmt(r.stretch * 100, 1) + " <small>cm</small>" : "—";
+    $("roSag").innerHTML = r.flying ? fmt(r.sag * 180 / Math.PI, 2) + "<small>°</small>" : "—";
+    $("roFreq").innerHTML = fmt(r.freq, 2) + " <small>Hz</small>";
+
+    var panelTilt = hang;
+    var sunFromVertical = (90 - s.sun) * Math.PI / 180;
+    var incidence = Math.abs(panelTilt - sunFromVertical);
+    var factor = Math.max(Math.cos(incidence), 0);
+    $("roInc").innerHTML = fmt(incidence * 180 / Math.PI, 1) + "<small>° · 출력 ×" + fmt(factor, 2) + "</small>";
+
+    $("roTension").parentElement.classList.toggle("alert", r.tension > DESIGN_LOAD);
+
+    var chipFly = $("chipFly"), chipLoad = $("chipLoad");
+    chipFly.textContent = r.flying ? "비행 중" : "이륙 불가";
+    chipFly.className = "chip " + (r.flying ? "ok" : "bad");
+    var margin = tether.brk / Math.max(r.tension, 0.01);
+    chipLoad.textContent = "파단여유 " + fmt(margin, 0) + "배";
+    chipLoad.className = "chip " + (margin < 5 ? "bad" : margin < 10 ? "warn" : "ok");
+
+    var sagErr = r.radius * Math.cos(r.theta) * r.sag;
+    $("estNote").innerHTML = r.flying
+      ? "엔코더는 늘어나기 전 길이만 압니다. 지금 조건에서 늘어남이 <b>" + fmt(r.stretch * 100, 1) + " cm</b>, 처짐 때문에 각도센서가 <b>" + fmt(r.sag * 180 / Math.PI, 2) + "°</b> 낮게 읽어 고도 추정이 <b>" + fmt(sagErr, 2) + " m</b> 틀어집니다. 둘 다 측정된 장력으로 보정 가능합니다."
+      : "평형해가 지평선 아래입니다. 이 조합에서는 연이 뜨지 않습니다.";
+
+    state.sampleAcc += dt;
+    if (r.flying && state.sampleAcc >= 1 / SAMPLE_HZ) {
+      state.sampleAcc = 0;
+      state.history.push(r.tension);
+      if (state.history.length > TRACE_POINTS) state.history.shift();
+    }
+    drawTrace();
+  }
+
+  var spare = null;
+  function gaussian() {
+    if (spare !== null) { var v = spare; spare = null; return v; }
+    var u1 = Math.random() || 1e-9, u2 = Math.random();
+    var mag = Math.sqrt(-2 * Math.log(u1));
+    spare = mag * Math.sin(2 * Math.PI * u2);
+    return mag * Math.cos(2 * Math.PI * u2);
+  }
+
+  document.querySelectorAll(".ctl input, .ctl select").forEach(function (el) {
+    el.addEventListener("input", function () { render(0); });
+  });
+
+  // Defaults come from the markup itself, so there is only one place to change
+  // a starting value and no second list to drift out of step with it.
+  $("reset").addEventListener("click", function () {
+    document.querySelectorAll(".ctl input, .ctl select").forEach(function (el) {
+      if (el.type === "checkbox") {
+        el.checked = el.defaultChecked;
+      } else if (el.tagName === "SELECT") {
+        for (var i = 0; i < el.options.length; i++) {
+          el.options[i].selected = el.options[i].defaultSelected;
+        }
+      } else {
+        el.value = el.defaultValue;
+      }
+    });
+    state.u = 0;
+    state.history.length = 0;
+    state.sampleAcc = 0;
+    state.gridKey = state.arrowKey = "";
+    state.traceKey = 0;
+    render(0);
+  });
+
+  function tick(now) {
+    // Scheduled before the work, so a throw in one frame cannot silently stop
+    // the loop the way it did when a duplicate id made every frame fail.
+    requestAnimationFrame(tick);
+    var dt = Math.min((now - state.last) / 1000, 0.25);
+    state.last = now;
+    state.acc += dt;
+    var step = 1 / SIM_HZ;
+    if (state.acc >= step) {
+      var elapsed = state.acc;
+      state.acc = 0;
+      render(elapsed);
+    }
+  }
+
+  render(0);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

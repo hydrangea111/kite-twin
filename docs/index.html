@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>방패연 계류줄 탄성 연구</title>
+<meta name="description" content="계류줄에 탄성체를 쓰면 더 적은 힘으로 연을 날릴 수 있을까? 시뮬레이션 결과와 코드.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e8590c'/%3E%3Cpath d='M32 8 50 30 32 56 14 30Z' fill='%23fff'/%3E%3Cpath d='M32 8v48M14 30h36' stroke='%23e8590c' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#fbf8f4;--fg:#222;--mute:#6b6259;--card:#fff;--line:#e6ddd2;--acc:#e8590c;--acc2:#b8430a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17130f;--fg:#f1ebe4;--mute:#a89d92;--card:#201a15;--line:#3a3028;--acc:#ff8a4c;--acc2:#ffb184}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.75 "Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px}
+header{padding:56px 0 28px}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.3;margin:0 0 12px}
+.lead{font-size:19px;color:var(--mute);margin:0}
+.hyp{margin:28px 0;padding:20px 22px;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-radius:10px;font-size:19px;font-weight:600}
+h2{font-size:25px;margin:48px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.stat b{display:block;font-size:30px;color:var(--acc);line-height:1.2}
+.stat span{color:var(--mute);font-size:15px}
+figure{margin:20px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+figure img{width:100%;height:auto;display:block;border-radius:6px;background:#fff}
+figcaption{color:var(--mute);font-size:15px;margin-top:8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:16px}
+th{background:var(--line)}
+code{background:var(--line);padding:2px 6px;border-radius:5px;font-size:15px}
+pre{background:#14110e;color:#f3ece4;padding:16px;border-radius:10px;overflow:auto;font-size:15px;line-height:1.6}
+a{color:var(--acc2)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
+.btn{display:inline-block;padding:12px 20px;border-radius:10px;border:2px solid var(--acc);color:var(--acc2);text-decoration:none;font-weight:700}
+.btn.main{background:var(--acc);color:#fff}
+footer{margin:56px 0 40px;color:var(--mute);font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>계류줄에 탄성체를 쓰면<br>더 적은 힘으로 연을 날릴 수 있을까?</h1>
+  <p class="lead">방패연을 지상 윈치와 줄로 운용하는 에너지 자립형 공중 태양광 방식을 위해, 연–줄–탑재물 계를 시뮬레이션으로 검증한 연구입니다.</p>
+  <div class="btns">
+    <a class="btn main" href="https://github.com/hydrangea111/kite-twin">코드 보기 (GitHub)</a>
+    <a class="btn" href="https://dh-kite-station.web.app/">지상국 모니터 소개</a>
+    <a class="btn" href="https://github.com/hydrangea111/kite-station/releases/latest">KiteStation 받기</a>
+  </div>
+</header>
+
+<div class="hyp">가설: 계류줄에 탄성체를 활용하면 더 적은 힘으로도 연을 날릴 수 있다.</div>
+
+<h2>왜 이 질문인가</h2>
+<p>돌풍이 불면 줄의 장력이 짧은 시간에 오릅니다. 우리 윈치는 줄을 4.7 cm/s로 감으므로 돌풍이 지나가는 1.5초 동안 줄 길이를 약 7 cm만 조절할 수 있습니다. 연의 형상(방패연)과 윈치 속도(모터)는 정해져 있어, 설계에서 바꿀 수 있는 변수는 줄의 강성입니다.</p>
+
+<h2>결과</h2>
+<div class="grid">
+  <div class="stat"><b>5.59 N</b><span>줄 강성을 1000배 바꿔도 정상 장력은 동일</span></div>
+  <div class="stat"><b>−61 %</b><span>1.5초 돌풍의 피크 장력 (38.6 → 15.0 N)</span></div>
+  <div class="stat"><b>약 12 %</b><span>돌풍이 10초로 길어지면 줄어드는 효과</span></div>
+  <div class="stat"><b>5 %</b><span>난류 비행 150회 최대 장력의 감소</span></div>
+  <div class="stat"><b>54.8 N</b><span>100회 비행에 한 번 초과하는 하중</span></div>
+  <div class="stat"><b>152건</b><span>단위시험 통과 (sim 94 + station 58)</span></div>
+</div>
+<p style="margin-top:18px">결론: 연을 띄워 두는 힘은 공기력과 중력이 정하므로 줄의 탄성으로 낮출 수 없고, 줄과 연결부가 견뎌야 하는 <b>피크 하중</b>은 짧은 돌풍에서 줄일 수 있습니다. 그래서 탄성 계류줄은 윈치를 보완하는 수단이 되고, 지상국은 느린 높이 보정을 맡습니다.</p>
+
+<figure><img src="img/fig2_stiffness.png" alt="줄 강성에 따른 장력, 신장, 고유진동수"><figcaption>줄 강성 k에 따른 정상 장력(일정), 돌풍 피크 장력(감소), 신장과 고유진동수.</figcaption></figure>
+<figure><img src="img/fig3_gust.png" alt="돌풍에 대한 장력 응답"><figcaption>돌풍(6→10 m/s, 1.5초)에 대한 장력 응답: 강성이 낮을수록 피크가 낮습니다.</figcaption></figure>
+<figure><img src="img/fig4_extremes.png" alt="150회 비행의 최대 장력 분포"><figcaption>난류 비행 150회의 최대 장력 분포와 100회에 한 번 초과하는 하중.</figcaption></figure>
+
+<h2>모형</h2>
+<p>연은 2차원 점질량, 줄은 인장력만 전달하는 스프링·감쇠기로 나타냈고, 바람은 평균풍(멱법칙) + 난류 + 돌풍으로 구성했습니다.</p>
+<figure><img src="img/fig1_model.png" alt="수치 모형의 구조"><figcaption>수치 모형의 구조.</figcaption></figure>
+
+<h2>저장소 구성</h2>
+<table>
+<tr><th>폴더</th><th>내용</th></tr>
+<tr><td><code>sim/</code></td><td>시뮬레이션 모형, 바람, 분석 스크립트 30개와 테스트</td></tr>
+<tr><td><code>station/</code></td><td>지상국 모니터(시리얼·재생·시뮬레이션 입력, 모형 예측과 비교)</td></tr>
+<tr><td><code>firmware/</code></td><td>지상국·탑재물 ESP32 펌웨어와 파서 테스트</td></tr>
+</table>
+
+<h2>실행</h2>
+<pre>pip install -r requirements.txt
+python sim/run_all.py --quick
+python station/bridge.py --sim --area 0.67</pre>
+
+<footer>모든 수치는 시뮬레이션 결과입니다. 양력·항력계수 등은 가정값이며 실측으로 교체할 예정입니다.</footer>
+</div>
+</body>
+</html>
