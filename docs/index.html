@@ -19,7 +19,7 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:72px}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 var(--sans);-webkit-font-smoothing:antialiased}
+body{word-break:keep-all;overflow-wrap:break-word;margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:var(--blue-d);text-decoration:none}
 a:hover{text-decoration:underline}
 .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
@@ -505,7 +505,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
         {t:"proc", s:"처짐각 계산", g:"줄이 처져 센서 각도가 낮다", p:"station/bridge.py", l:326,
           w:"줄 자체 무게 때문에 생기는 처짐각을 구한다.",
           y:"지상 각도 센서는 줄 끝의 접선 방향을 읽는다. 연이 실제로 있는 방향은 그보다 높다."},
-        {t:"dec", s:"처짐각이\n정상 범위?", side:"상한으로 자르고\n‘신뢰 불가’ 표시", p:"station/bridge.py", l:330,
+        {t:"dec", s:"처짐각이\n정상 범위 안인가?", side:"상한으로 자르고\n‘신뢰 불가’ 표시", p:"station/bridge.py", l:330,
           w:"줄이 느슨하면 처짐각이 한없이 커지므로 상한을 넘는지 확인한다.",
           y:"처짐 보정은 장력에 반비례해서 장력이 0.01 N이면 1151°가 나온다. 이런 값은 화면에 그대로 나가면 안 된다."},
         {t:"proc", s:"연 위치 (x, z) 계산", g:"보정 효과를 눈으로 확인", p:"station/bridge.py", l:332,
@@ -514,7 +514,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
         {t:"proc", s:"CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"station/bridge.py", l:340,
           w:"측정한 장력·각도·풍속을 힘의 평형식에 넣어 양력·항력계수를 구한다.",
           y:"계수는 직접 잴 수 없다. 대신 그 결과로 나타나는 장력과 각도는 잴 수 있다."},
-        {t:"dec", s:"믿을 수 있는\n표본?", side:"이번 행은\n추정에서 제외", p:"station/bridge.py", l:344,
+        {t:"dec", s:"믿고 쓸 수 있는\n표본인가?", side:"이번 행은\n추정에서 제외", p:"station/bridge.py", l:344,
           w:"연이 안정된 상태이고, 줄이 팽팽하며, 처짐 보정이 유효한지 확인한다.",
           y:"연이 가속하는 중에는 힘의 평형식이 성립하지 않는다. 그때의 역산값은 흔들리는 값이 아니라 틀린 값이다."},
         {t:"proc", s:"추정값 갱신", g:"중앙값으로 튀는 값 방어", p:"station/bridge.py", l:346,
@@ -550,7 +550,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
         {t:"proc", s:"0.1 s 이내로 한 걸음", g:"돌풍을 건너뛰지 않으려고", p:"sim/model.py", l:337,
           w:"Radau 적분기로 위치와 속도를 갱신한다. 한 걸음은 0.1 s를 넘기지 않는다.",
           y:"돌풍은 짧아서 적분기가 보폭을 크게 잡으면 통째로 건너뛴다. 실제로 돌풍을 놓치고 정상 장력을 피크로 낸 사례가 있었다."},
-        {t:"dec", s:"종료 시각?", side:"장력 계산으로\n되돌아감", loop:1, p:"sim/model.py", l:339,
+        {t:"dec", s:"종료 시각에\n도달했는가?", side:"장력 계산으로\n되돌아감", loop:1, p:"sim/model.py", l:339,
           w:"현재 시각과 종료 시각을 비교한다.",
           y:"한 걸음마다 새 위치에서 힘을 다시 계산해야 하므로 끝날 때까지 되풀이한다."},
         {t:"end", s:"장력·고도각 정리", g:"결과를 분석에 넘김", p:"sim/model.py", l:356,
@@ -568,7 +568,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
         {t:"proc", s:"안정된 구간만 선별", g:"가속·느슨한 구간은 제외", p:"sim/twin.py", l:148,
           w:"장력과 고도각의 변화가 느리고, 줄이 팽팽하며, 처짐 보정이 유효한 행만 남긴다.",
           y:"역산에 쓰는 힘의 평형식은 연이 가속하지 않을 때만 맞는다. 줄이 느슨한 구간은 CD가 음수로 나올 만큼 틀린다."},
-        {t:"dec", s:"표본 50개\n이상?", side:"오류로 종료", stop:true, p:"sim/twin.py", l:237,
+        {t:"dec", s:"표본이 50개\n이상인가?", side:"오류로 종료", stop:true, p:"sim/twin.py", l:237,
           w:"고른 행의 개수를 센다.",
           y:"표본이 너무 적으면 어떤 계수를 내놓아도 믿을 수 없다."},
         {t:"proc", s:"표본별 CL·CD 역산", g:"힘의 평형에서 거꾸로 구함", p:"sim/twin.py", l:204,
@@ -584,6 +584,9 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     }
   };
 
+  // 문장이 끝날 때마다 줄을 바꿔 읽기 쉽게 한다. 브라우저의 자동 줄바꿈에만 맡기지 않는다.
+  function brk(t){ return esc(t).split(". ").join(".<br>"); }
+
   function flowNode(path, line){
     var hit = null;
     Object.keys(FLOWS).forEach(function(k){
@@ -593,7 +596,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   }
 
   function flowSvg(spec){
-    var W = 400, CX = 120, NW = 224, SX = 270, SW = 124, GAP = 24, y = 8, out = [], pos = [];
+    var W = 400, CX = 120, NW = 224, SX = 284, SW = 112, GAP = 24, y = 8, out = [], pos = [];
     var H = {start:50, end:50, proc:50, io:50, dec:76};
     spec.nodes.forEach(function(n){
       var h = (n.t === "dec" || n.g) ? H[n.t] : 38;
@@ -692,7 +695,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     var hit = line > 0 ? flowNode(path, line) : null;
     var fs = $("fstep");
     if (hit){
-      fs.innerHTML = '<b>' + FLOWS[hit.k].name + ' ' + (hit.i + 1) + '단계 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + esc(hit.n.w) + '<br><em>왜</em>' + esc(hit.n.y);
+      fs.innerHTML = '<b>' + FLOWS[hit.k].name + ' ' + (hit.i + 1) + '단계 · ' + esc(hit.n.s.split("\n").join(" ")) + '</b>' + brk(hit.n.w) + '<br><em>왜</em>' + brk(hit.n.y);
       fs.className = "fstep on";
       if (!$("flowwrap").hidden) tab(hit.k);
     } else { fs.className = "fstep"; }
