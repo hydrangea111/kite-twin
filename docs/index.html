@@ -66,6 +66,14 @@ table.t{width:100%;border-collapse:collapse;font-size:15px;margin:14px 0 6px}
 table.t th{background:var(--soft2);text-align:left;font-weight:600;padding:10px 14px;border-bottom:2px solid var(--line2)}
 table.t td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
 table.t td.n{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+@media(max-width:600px){
+  table.t,table.t tbody{display:block}
+  table.t thead,table.t th{display:none}
+  table.t tr:first-child{padding:0;border:0}
+  table.t tr{display:block;padding:10px 2px;border-bottom:1px solid var(--line)}
+  table.t td{display:block;padding:1px 12px;border:0}
+  table.t td.n{white-space:normal;font-size:16px;margin-top:2px}
+}
 .tw{overflow-x:auto}
 
 /* 그림 */
