@@ -4,88 +4,516 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>방패연 계류줄 탄성 연구</title>
-<meta name="description" content="계류줄에 탄성체를 쓰면 더 적은 힘으로 연을 날릴 수 있을까? 시뮬레이션 결과와 코드.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e8590c'/%3E%3Cpath d='M32 8 50 30 32 56 14 30Z' fill='%23fff'/%3E%3Cpath d='M32 8v48M14 30h36' stroke='%23e8590c' stroke-width='3'/%3E%3C/svg%3E">
+<meta name="description" content="계류줄에 탄성체를 적용하면 더 적은 힘으로 연을 날릴 수 있는가. 시뮬레이션 코드, 지상국 모니터, 시스템 구조.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f6feb'/%3E%3Cpath d='M32 8 50 30 32 56 14 30Z' fill='%23fff'/%3E%3Ccircle cx='32' cy='30' r='5' fill='%231f6feb'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <style>
-:root{--bg:#fbf8f4;--fg:#222;--mute:#6b6259;--card:#fff;--line:#e6ddd2;--acc:#e8590c;--acc2:#b8430a}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17130f;--fg:#f1ebe4;--mute:#a89d92;--card:#201a15;--line:#3a3028;--acc:#ff8a4c;--acc2:#ffb184}}
+:root{
+  --bg:#ffffff; --soft:#f4f8fd; --soft2:#eaf2fb; --line:#d8e3f0; --line2:#c3d3e6;
+  --ink:#0f2238; --mute:#52667d; --faint:#8497ad;
+  --blue:#1f6feb; --blue-d:#0b4fb8; --blue-l:#e3efff; --teal:#0f9d8a; --teal-l:#dff5f1;
+  --sans:"Pretendard Variable","Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --mono:"JetBrains Mono","D2Coding","Consolas",monospace;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.75 "Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
-.wrap{max-width:860px;margin:0 auto;padding:0 16px}
-header{padding:56px 0 28px}
-h1{font-size:clamp(28px,5vw,40px);line-height:1.3;margin:0 0 12px}
-.lead{font-size:19px;color:var(--mute);margin:0}
-.hyp{margin:28px 0;padding:20px 22px;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-radius:10px;font-size:19px;font-weight:600}
-h2{font-size:25px;margin:48px 0 14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-.stat b{display:block;font-size:30px;color:var(--acc);line-height:1.2}
-.stat span{color:var(--mute);font-size:15px}
-figure{margin:20px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-figure img{width:100%;height:auto;display:block;border-radius:6px;background:#fff}
-figcaption{color:var(--mute);font-size:15px;margin-top:8px}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:16px}
-th{background:var(--line)}
-code{background:var(--line);padding:2px 6px;border-radius:5px;font-size:15px}
-pre{background:#14110e;color:#f3ece4;padding:16px;border-radius:10px;overflow:auto;font-size:15px;line-height:1.6}
-a{color:var(--acc2)}
-.btns{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
-.btn{display:inline-block;padding:12px 20px;border-radius:10px;border:2px solid var(--acc);color:var(--acc2);text-decoration:none;font-weight:700}
-.btn.main{background:var(--acc);color:#fff}
-footer{margin:56px 0 40px;color:var(--mute);font-size:15px}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--blue-d);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+/* 상단 내비게이션 */
+.nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:26px;height:56px}
+.brand{font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
+.brand i{width:22px;height:22px;border-radius:6px;background:var(--blue);display:inline-block;position:relative}
+.brand i:after{content:"";position:absolute;left:5px;top:3px;width:12px;height:16px;background:#fff;clip-path:polygon(50% 0,100% 45%,50% 100%,0 45%)}
+.nav a.l{color:var(--mute);font-size:15px}
+.nav a.l:hover{color:var(--blue-d);text-decoration:none}
+.nav .sp{flex:1}
+.nav .gh{font-size:14px;border:1px solid var(--line2);padding:6px 13px;border-radius:8px;color:var(--ink)}
+@media(max-width:720px){.nav a.l{display:none}}
+
+/* 머리말 */
+.hero{background:linear-gradient(180deg,var(--soft) 0%,#fff 100%);border-bottom:1px solid var(--line)}
+.hero .wrap{padding:64px 20px 48px}
+.eyebrow{font-size:14px;color:var(--blue-d);font-weight:600;letter-spacing:.02em;margin-bottom:14px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.28;letter-spacing:-.025em;margin:0 0 18px;font-weight:800}
+.lead{font-size:18px;color:var(--mute);max-width:720px;margin:0}
+.hypo{margin:30px 0 0;padding:18px 22px;background:#fff;border:1px solid var(--line2);border-left:5px solid var(--blue);border-radius:10px;max-width:760px}
+.hypo b{display:block;font-size:13px;color:var(--blue-d);margin-bottom:4px;letter-spacing:.02em}
+.hypo span{font-size:18px;font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.btn{display:inline-block;padding:11px 20px;border-radius:10px;font-weight:600;font-size:15px;border:1px solid var(--line2);color:var(--ink);background:#fff}
+.btn:hover{text-decoration:none;border-color:var(--blue);color:var(--blue-d)}
+.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.p:hover{background:var(--blue-d);color:#fff}
+
+/* 절 */
+section{padding:56px 0 8px}
+.sec-no{font-size:13px;font-weight:700;color:var(--blue);letter-spacing:.08em}
+h2{font-size:28px;letter-spacing:-.02em;margin:4px 0 18px;line-height:1.35}
+h3{font-size:19px;margin:30px 0 8px}
+p{margin:0 0 14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.note{color:var(--mute);font-size:15px}
+
+/* 표 */
+table.t{width:100%;border-collapse:collapse;font-size:15px;margin:14px 0 6px}
+table.t th{background:var(--soft2);text-align:left;font-weight:600;padding:10px 14px;border-bottom:2px solid var(--line2)}
+table.t td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t td.n{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.tw{overflow-x:auto}
+
+/* 그림 */
+figure{margin:22px 0;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+figure img{width:100%;height:auto;display:block}
+figcaption{font-size:14px;color:var(--mute);margin-top:10px;line-height:1.6}
+
+/* 구조도 */
+.diagram{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:12px;overflow-x:auto}
+.diagram svg{width:100%;min-width:760px;height:auto;display:block}
+.diagram text{font-family:var(--sans)}
+.diagram a:hover rect.nb{stroke:var(--blue);stroke-width:2}
+.diagram a{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--mute);margin:10px 2px 0}
+.legend span:before{content:"";display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend .a:before{background:var(--blue-l);border:1px solid var(--blue)}
+.legend .b:before{background:var(--teal-l);border:1px solid var(--teal)}
+.legend .c:before{background:#fff;border:1px solid var(--line2)}
+
+/* 실행 */
+.runs{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px;margin-top:10px}
+.run{border:1px solid var(--line);border-radius:12px;padding:18px 18px 14px;background:#fff}
+.run h3{margin:0 0 4px;font-size:17px}
+.run p{font-size:14.5px;color:var(--mute);margin:0 0 10px}
+pre.cmd{margin:0;background:#0f2238;color:#e8f1fc;padding:12px 14px;border-radius:8px;font:13.5px/1.7 var(--mono);overflow:auto;position:relative}
+pre.cmd .c{color:#8fb0d6}
+.copy{position:absolute;right:8px;top:8px;font:12px var(--sans);background:#1d3a5c;color:#cfe2f8;border:0;border-radius:6px;padding:3px 9px;cursor:pointer}
+.copy:hover{background:var(--blue)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:8px 0 0}
+.steps li{counter-increment:s;position:relative;padding:0 0 12px 40px;font-size:15px}
+.steps li:before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--blue-l);color:var(--blue-d);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+
+/* 코드 열람기 */
+.viewer{display:grid;grid-template-columns:300px 1fr;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff;min-height:560px;margin-top:10px}
+.side{border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;max-height:760px}
+.side input{margin:10px;padding:9px 12px;border:1px solid var(--line2);border-radius:8px;font:14px var(--sans);outline:none;background:#fff}
+.side input:focus{border-color:var(--blue)}
+.tree{overflow:auto;padding:0 6px 12px;font-size:14px;flex:1}
+.tree details{margin-left:2px}
+.tree summary{cursor:pointer;padding:3px 6px;color:var(--ink);font-weight:600;list-style:none;border-radius:6px;user-select:none}
+.tree summary:before{content:"▸";display:inline-block;width:14px;color:var(--faint);font-size:11px}
+.tree details[open]>summary:before{content:"▾"}
+.tree summary:hover{background:var(--soft2)}
+.tree .kids{margin-left:10px;border-left:1px solid var(--line);padding-left:6px}
+.tree a.f{display:block;padding:3px 8px;border-radius:6px;color:#2b4059;font-family:var(--mono);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tree a.f:hover{background:var(--soft2);text-decoration:none}
+.tree a.f.on{background:var(--blue);color:#fff}
+.main{min-width:0;display:flex;flex-direction:column}
+.fhead{padding:14px 18px;border-bottom:1px solid var(--line);background:#fff}
+.fhead .p{font:500 14px var(--mono);color:var(--ink);word-break:break-all}
+.fhead .d{font-size:14.5px;color:var(--mute);margin-top:3px}
+.fhead .m{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--faint);flex-wrap:wrap}
+.fhead .m a{color:var(--blue-d)}
+.code{overflow:auto;max-height:680px;background:#fff}
+.code pre{margin:0;padding:12px 0;font:13px/1.65 var(--mono);counter-reset:ln}
+.code .ln{display:block;padding:0 18px 0 0;white-space:pre;position:relative;padding-left:60px;min-height:1.65em}
+.code .ln:before{counter-increment:ln;content:counter(ln);position:absolute;left:0;width:46px;text-align:right;color:var(--faint);user-select:none}
+.code .hljs{background:transparent;padding:0}
+.mobile-toggle{display:none}
+@media(max-width:860px){
+  .viewer{grid-template-columns:1fr}
+  .side{border-right:0;border-bottom:1px solid var(--line);max-height:320px}
+}
+
+footer{margin-top:72px;border-top:1px solid var(--line);background:var(--soft);padding:30px 0 40px;font-size:14px;color:var(--mute)}
+footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <h1>계류줄에 탄성체를 쓰면<br>더 적은 힘으로 연을 날릴 수 있을까?</h1>
-  <p class="lead">방패연을 지상 윈치와 줄로 운용하는 에너지 자립형 공중 태양광 방식을 위해, 연–줄–탑재물 계를 시뮬레이션으로 검증한 연구입니다.</p>
+
+<div class="nav"><div class="wrap">
+  <a class="brand" href="#top"><i></i>kite-twin</a>
+  <a class="l" href="#overview">연구 개요</a>
+  <a class="l" href="#results">결과</a>
+  <a class="l" href="#architecture">시스템 구조</a>
+  <a class="l" href="#run">실행 방법</a>
+  <a class="l" href="#code">코드 열람</a>
+  <span class="sp"></span>
+  <a class="gh" href="https://github.com/hydrangea111/kite-twin">GitHub</a>
+</div></div>
+
+<div class="hero" id="top"><div class="wrap">
+  <div class="eyebrow">충북과학고등학교 R&amp;E · 시뮬레이션과 지상국 코드</div>
+  <h1>계류줄에 탄성체를 적용하면<br>더 적은 힘으로 연을 날릴 수 있는가</h1>
+  <p class="lead">방패연을 지상 윈치와 계류줄로 운용하는 공중 태양광 방식을 대상으로, 연–줄–탑재물 계를 시뮬레이션하여 계류줄 탄성의 효과를 검증하였다. 이 사이트는 그 연구의 코드와 시스템 구조를 정리한 것이다.</p>
+  <div class="hypo"><b>연구 가설</b><span>계류줄에 탄성체를 활용하면 더 적은 힘으로도 연을 날릴 수 있다.</span></div>
   <div class="btns">
-    <a class="btn main" href="https://github.com/hydrangea111/kite-twin">코드 보기 (GitHub)</a>
-    <a class="btn" href="https://dh-kite-station.web.app/">지상국 모니터 소개</a>
-    <a class="btn" href="https://github.com/hydrangea111/kite-station/releases/latest">KiteStation 받기</a>
+    <a class="btn p" href="#code">코드 열람하기</a>
+    <a class="btn" href="#architecture">시스템 구조 보기</a>
+    <a class="btn" href="https://github.com/hydrangea111/kite-station/releases/latest">지상국 모니터 내려받기</a>
   </div>
-</header>
+</div></div>
 
-<div class="hyp">가설: 계류줄에 탄성체를 활용하면 더 적은 힘으로도 연을 날릴 수 있다.</div>
+<div class="wrap">
 
-<h2>왜 이 질문인가</h2>
-<p>돌풍이 불면 줄의 장력이 짧은 시간에 오릅니다. 우리 윈치는 줄을 4.7 cm/s로 감으므로 돌풍이 지나가는 1.5초 동안 줄 길이를 약 7 cm만 조절할 수 있습니다. 연의 형상(방패연)과 윈치 속도(모터)는 정해져 있어, 설계에서 바꿀 수 있는 변수는 줄의 강성입니다.</p>
+<section id="overview">
+  <div class="sec-no">01</div>
+  <h2>연구 개요</h2>
+  <div class="two">
+    <div>
+      <h3 style="margin-top:0">문제</h3>
+      <p>계류 방식에서 장치의 안전은 줄이 받는 하중에 좌우된다. 돌풍이 불면 줄의 장력이 짧은 시간에 상승하며, 지상국의 윈치가 줄을 풀어 이를 완화해야 한다. 그러나 본 연구의 윈치는 줄을 4.7 cm/s로 감으므로, 돌풍이 지나가는 1.5초 동안 줄 길이를 약 7 cm만 조절할 수 있다.</p>
+      <p>연의 형상은 방패연으로, 윈치 속도는 모터로 정해져 있으므로 설계에서 조절할 수 있는 변수는 줄의 강성이다.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">방법</h3>
+      <p>연을 2차원 질점으로, 줄을 인장력만 전달하는 스프링·감쇠기로 모형화하였다. 바람은 평균풍(멱법칙), 난류, 돌풍의 합으로 구성하고, 줄의 강성을 5~5000 N/m에서 변화시키며 정상 장력과 돌풍의 피크 장력을 비교하였다.</p>
+      <p>모형의 타당성은 적분 수렴성, 에너지 보존, 상사 시험, 변이 시험, 단위시험 152건으로 점검하였다.</p>
+    </div>
+  </div>
+</section>
 
-<h2>결과</h2>
-<div class="grid">
-  <div class="stat"><b>5.59 N</b><span>줄 강성을 1000배 바꿔도 정상 장력은 동일</span></div>
-  <div class="stat"><b>−61 %</b><span>1.5초 돌풍의 피크 장력 (38.6 → 15.0 N)</span></div>
-  <div class="stat"><b>약 12 %</b><span>돌풍이 10초로 길어지면 줄어드는 효과</span></div>
-  <div class="stat"><b>5 %</b><span>난류 비행 150회 최대 장력의 감소</span></div>
-  <div class="stat"><b>54.8 N</b><span>100회 비행에 한 번 초과하는 하중</span></div>
-  <div class="stat"><b>152건</b><span>단위시험 통과 (sim 94 + station 58)</span></div>
+<section id="results">
+  <div class="sec-no">02</div>
+  <h2>주요 결과</h2>
+  <div class="tw"><table class="t">
+    <tr><th style="width:44%">항목</th><th>결과</th></tr>
+    <tr><td>정상 장력 (줄 강성 5~5000 N/m)</td><td class="n">5.59 N, 모든 조건에서 일정</td></tr>
+    <tr><td>1.5초 돌풍(6→10 m/s)의 피크 장력</td><td class="n">38.6 N → 15.0 N (61 % 감소)</td></tr>
+    <tr><td>돌풍 지속시간 10초에서의 감소 효과</td><td class="n">약 12 %</td></tr>
+    <tr><td>난류 비행 150회 최대 장력의 감소 효과</td><td class="n">5 %</td></tr>
+    <tr><td>100회 비행에 한 번 초과하는 하중</td><td class="n">54.8 N (95 % 구간 51.3~58.2 N)</td></tr>
+    <tr><td>단위시험</td><td class="n">152건 통과 (sim 94, station 58)</td></tr>
+  </table></div>
+  <p style="margin-top:16px">정상 장력은 공기력과 중력의 평형으로 정해지므로 줄의 강성에 의존하지 않는다. 반면 돌풍의 피크 장력은 줄이 늘어나며 충격이 작용하는 시간을 연장하는 만큼 감소한다. 따라서 탄성 계류줄은 연을 띄워 두는 데 필요한 힘은 그대로 두고, 줄과 연결부가 견뎌야 하는 피크 하중을 줄이는 수단이다. 이 효과는 돌풍이 길어질수록 작아지며, 난류 비행 전체의 최대 장력에서는 5 % 수준이다.</p>
+  <div class="two">
+    <figure><img src="img/fig2_stiffness.png" alt="줄 강성에 따른 정상 장력, 피크 장력, 신장, 고유진동수"><figcaption>줄 강성 k에 따른 정상 장력(일정), 돌풍 피크 장력, 신장과 고유진동수.</figcaption></figure>
+    <figure><img src="img/fig3_gust.png" alt="돌풍에 대한 장력 응답"><figcaption>돌풍(6→10 m/s, 1.5초)에 대한 장력 응답. 강성이 낮을수록 피크가 낮다.</figcaption></figure>
+  </div>
+  <p class="note">모든 수치는 시뮬레이션 결과이며, 양력·항력계수와 면적·질량은 실측 전의 가정값이다.</p>
+</section>
+
+<section id="architecture">
+  <div class="sec-no">03</div>
+  <h2>시스템 구조</h2>
+  <p>저장소는 크게 세 부분으로 구성된다. 계류 시스템을 계산하는 <b>시뮬레이션</b>(<code>sim/</code>), 실제 비행을 보면서 모형과 비교하는 <b>지상국 모니터</b>(<code>station/</code>), 두 개의 ESP32 노드를 구동하는 <b>펌웨어</b>(<code>firmware/</code>)이다. 아래 그림의 상자를 누르면 해당 파일의 코드가 열린다.</p>
+
+  <h3>3.1 실시간 계측 흐름</h3>
+  <p>공중 노드가 측정한 자세·위치·발전 값은 ESP-NOW 무선으로 지상 노드에 전달되고, 지상 노드는 자신이 측정한 장력·각도·풍속과 함께 CSV 한 줄로 USB 시리얼에 출력한다. 중계기(<code>bridge.py</code>)는 이 줄을 읽어 파생값을 계산하고, 시뮬레이션 모형의 예측과 함께 SSE로 브라우저에 송출한다.</p>
+  <div class="diagram">
+  <svg viewBox="0 0 1000 440" role="img" aria-label="실시간 계측 흐름 구조도">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9Z" fill="#52667d"/></marker>
+    </defs>
+    <!-- 노드 -->
+    <a href="#code/firmware/payload/src/main.cpp"><rect class="nb" x="20" y="40" width="190" height="96" rx="12" fill="#e3efff" stroke="#1f6feb"/>
+      <text x="115" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">공중 노드</text>
+      <text x="115" y="92" text-anchor="middle" font-size="12.5" fill="#52667d">ESP32 · IMU · GPS</text>
+      <text x="115" y="111" text-anchor="middle" font-size="12.5" fill="#52667d">INA226(발전 측정)</text>
+      <text x="115" y="128" text-anchor="middle" font-size="11" fill="#8497ad">firmware/payload</text></a>
+    <a href="#code/firmware/ground/src/main.cpp"><rect class="nb" x="270" y="40" width="190" height="96" rx="12" fill="#e3efff" stroke="#1f6feb"/>
+      <text x="365" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">지상 노드</text>
+      <text x="365" y="92" text-anchor="middle" font-size="12.5" fill="#52667d">ESP32 · 장력 · 각도 · 풍속</text>
+      <text x="365" y="111" text-anchor="middle" font-size="12.5" fill="#52667d">수신 패킷 + 지상 측정</text>
+      <text x="365" y="128" text-anchor="middle" font-size="11" fill="#8497ad">firmware/ground</text></a>
+    <a href="#code/station/bridge.py"><rect class="nb" x="520" y="40" width="200" height="96" rx="12" fill="#dff5f1" stroke="#0f9d8a"/>
+      <text x="620" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">bridge.py</text>
+      <text x="620" y="92" text-anchor="middle" font-size="12.5" fill="#52667d">CSV 해석 · 파생값(Deriver)</text>
+      <text x="620" y="111" text-anchor="middle" font-size="12.5" fill="#52667d">소스 전환 · HTTP 서버</text>
+      <text x="620" y="128" text-anchor="middle" font-size="11" fill="#8497ad">station/</text></a>
+    <a href="#code/station/monitor.html"><rect class="nb" x="780" y="40" width="200" height="96" rx="12" fill="#dff5f1" stroke="#0f9d8a"/>
+      <text x="880" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">브라우저 화면</text>
+      <text x="880" y="92" text-anchor="middle" font-size="12.5" fill="#52667d">3D 디지털 트윈</text>
+      <text x="880" y="111" text-anchor="middle" font-size="12.5" fill="#52667d">실측 / 예측 분할 비교</text>
+      <text x="880" y="128" text-anchor="middle" font-size="11" fill="#8497ad">monitor.html · app.js · scene.js</text></a>
+    <!-- 화살표 -->
+    <line x1="210" y1="88" x2="268" y2="88" stroke="#52667d" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="239" y="78" text-anchor="middle" font-size="11.5" fill="#52667d">ESP-NOW</text>
+    <line x1="460" y1="88" x2="518" y2="88" stroke="#52667d" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="489" y="78" text-anchor="middle" font-size="11.5" fill="#52667d">USB 시리얼</text>
+    <text x="489" y="106" text-anchor="middle" font-size="11" fill="#8497ad">CSV 28열</text>
+    <line x1="720" y1="88" x2="778" y2="88" stroke="#52667d" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="749" y="78" text-anchor="middle" font-size="11.5" fill="#52667d">SSE</text>
+    <text x="749" y="106" text-anchor="middle" font-size="11" fill="#8497ad">/stream</text>
+
+    <!-- 하단: 모형 -->
+    <a href="#code/sim/model.py"><rect class="nb" x="520" y="236" width="200" height="86" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="620" y="264" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">sim/ 모형</text>
+      <text x="620" y="285" text-anchor="middle" font-size="12.5" fill="#52667d">model · wind · params</text>
+      <text x="620" y="303" text-anchor="middle" font-size="12.5" fill="#52667d">처짐 보정 · 평형 · 시뮬레이터 생성</text></a>
+    <line x1="620" y1="236" x2="620" y2="138" stroke="#52667d" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="632" y="190" font-size="11.5" fill="#52667d">import</text>
+
+    <!-- 소스 -->
+    <a href="#code/station/fake_rig.py"><rect class="nb" x="270" y="236" width="190" height="86" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="365" y="264" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">fake_rig.py</text>
+      <text x="365" y="285" text-anchor="middle" font-size="12.5" fill="#52667d">장비 없이 시험</text>
+      <text x="365" y="303" text-anchor="middle" font-size="12.5" fill="#52667d">같은 바이트를 TCP로 송신</text></a>
+    <line x1="460" y1="279" x2="540" y2="279" stroke="#fff" stroke-width="0"/>
+    <path d="M365 236 L365 138" stroke="#52667d" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+    <text x="377" y="190" font-size="11.5" fill="#52667d">socket://</text>
+
+    <!-- 기록·내보내기 -->
+    <rect x="780" y="236" width="200" height="86" rx="12" fill="#fff" stroke="#c3d3e6"/>
+    <text x="880" y="264" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">station/logs/*.csv</text>
+    <text x="880" y="285" text-anchor="middle" font-size="12.5" fill="#52667d">펌웨어와 같은 원시 행 기록</text>
+    <text x="880" y="303" text-anchor="middle" font-size="12.5" fill="#52667d">재생 시 bridge.py 의 입력</text>
+    <path d="M720 118 C 760 130, 790 190, 800 234" stroke="#52667d" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+    <text x="772" y="196" font-size="11.5" fill="#52667d" text-anchor="end">기록</text>
+    <a href="#code/station/export.py"><rect class="nb" x="780" y="360" width="200" height="64" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="880" y="387" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">export.py</text>
+      <text x="880" y="408" text-anchor="middle" font-size="12.5" fill="#52667d">기록 → 오프라인 단일 HTML</text></a>
+    <line x1="880" y1="322" x2="880" y2="358" stroke="#52667d" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- 시뮬레이터 입력 -->
+    <rect x="20" y="236" width="190" height="86" rx="12" fill="#fff" stroke="#c3d3e6"/>
+    <text x="115" y="264" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">--sim 입력</text>
+    <text x="115" y="285" text-anchor="middle" font-size="12.5" fill="#52667d">검증된 모형이 생성한 행</text>
+    <text x="115" y="303" text-anchor="middle" font-size="12.5" fill="#52667d">설정 변경 후 재적분</text>
+    <path d="M115 236 C 115 190, 500 190, 518 120" stroke="#52667d" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  </svg>
+  </div>
+  <div class="legend"><span class="a">펌웨어(ESP32)</span><span class="b">지상국 소프트웨어</span><span class="c">시뮬레이션·시험·기록</span><span>실선: 실측 경로, 점선: 시험·재생·시뮬레이터 경로</span></div>
+  <p class="note" style="margin-top:12px">펌웨어와 중계기 사이에는 스키마나 핸드셰이크가 없으므로, 열 수와 형식 지정자의 일치를 <code>test_bridge.py</code>가 펌웨어 소스를 직접 파싱하여 검사한다.</p>
+
+  <h3>3.2 시뮬레이션 구조</h3>
+  <p>모든 분석 스크립트는 같은 모형을 공유한다. <code>params.py</code>의 상수와 <code>wind.py</code>의 바람장을 <code>model.py</code>의 운동방정식에 넣어 적분하고, 각 연구 스크립트가 그 위에서 서로 다른 질문에 답한다. <code>run_all.py</code>는 스크립트를 하위 프로세스로 하나씩 실행하여 결과를 <code>sim/out/</code>에 저장한다.</p>
+  <div class="diagram">
+  <svg viewBox="0 0 1000 330" role="img" aria-label="시뮬레이션 구조도">
+    <a href="#code/sim/params.py"><rect class="nb" x="20" y="30" width="170" height="64" rx="12" fill="#dff5f1" stroke="#0f9d8a"/>
+      <text x="105" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">params.py</text>
+      <text x="105" y="78" text-anchor="middle" font-size="12.5" fill="#52667d">연·줄·탑재물 상수</text></a>
+    <a href="#code/sim/wind.py"><rect class="nb" x="20" y="124" width="170" height="64" rx="12" fill="#dff5f1" stroke="#0f9d8a"/>
+      <text x="105" y="152" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">wind.py</text>
+      <text x="105" y="172" text-anchor="middle" font-size="12.5" fill="#52667d">평균풍 + 난류 + 돌풍</text></a>
+    <a href="#code/sim/model.py"><rect class="nb" x="270" y="56" width="200" height="104" rx="12" fill="#e3efff" stroke="#1f6feb"/>
+      <text x="370" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#0f2238">model.py</text>
+      <text x="370" y="110" text-anchor="middle" font-size="12.5" fill="#52667d">2차원 점질량 + 신축 줄</text>
+      <text x="370" y="128" text-anchor="middle" font-size="12.5" fill="#52667d">Radau 적분 · 평형 · 처짐각</text></a>
+    <line x1="190" y1="62" x2="268" y2="90" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+    <line x1="190" y1="156" x2="268" y2="130" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+    <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9Z" fill="#52667d"/></marker></defs>
+
+    <a href="#code/sim/run_all.py"><rect class="nb" x="560" y="30" width="200" height="70" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="660" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">연구 스크립트 15개</text>
+      <text x="660" y="80" text-anchor="middle" font-size="12.5" fill="#52667d">elasticity · extremes · uncertainty …</text></a>
+    <a href="#code/sim/twin.py"><rect class="nb" x="560" y="124" width="200" height="70" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="660" y="152" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">twin · predict · auto</text>
+      <text x="660" y="174" text-anchor="middle" font-size="12.5" fill="#52667d">계수 역산 · 예측 · 자동 교정</text></a>
+    <line x1="470" y1="96" x2="558" y2="66" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+    <line x1="470" y1="120" x2="558" y2="152" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+
+    <a href="#code/sim/out/elasticity.txt"><rect class="nb" x="830" y="30" width="150" height="70" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="905" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">sim/out/</text>
+      <text x="905" y="80" text-anchor="middle" font-size="12.5" fill="#52667d">결과 출력 · 그림</text></a>
+    <a href="#code/station/bridge.py"><rect class="nb" x="830" y="124" width="150" height="70" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="905" y="152" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">지상국 모니터</text>
+      <text x="905" y="174" text-anchor="middle" font-size="12.5" fill="#52667d">model · wind · params 를 import</text></a>
+    <line x1="760" y1="66" x2="828" y2="66" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+    <line x1="760" y1="160" x2="828" y2="160" stroke="#52667d" stroke-width="2" marker-end="url(#ar2)"/>
+
+    <a href="#code/sim/test_model.py"><rect class="nb" x="270" y="226" width="490" height="70" rx="12" fill="#fff" stroke="#c3d3e6"/>
+      <text x="515" y="254" text-anchor="middle" font-size="15" font-weight="700" fill="#0f2238">test_*.py (sim 94건)</text>
+      <text x="515" y="276" text-anchor="middle" font-size="12.5" fill="#52667d">코드와 독립적으로 알려진 값(평형, 에너지 보존, 상사)과 대조</text></a>
+    <line x1="370" y1="226" x2="370" y2="162" stroke="#52667d" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+  </svg>
+  </div>
+</section>
+
+<section id="run">
+  <div class="sec-no">04</div>
+  <h2>실행 방법</h2>
+  <p>Python 3.11 이상이 필요하며, 의존 패키지는 <code>requirements.txt</code>에 있다.</p>
+  <div class="runs">
+    <div class="run"><h3>설치</h3><p>저장소를 내려받고 패키지를 설치한다.</p>
+<pre class="cmd">git clone https://github.com/hydrangea111/kite-twin
+cd kite-twin
+pip install -r requirements.txt</pre></div>
+    <div class="run"><h3>시뮬레이션 실행</h3><p>전체 연구 스크립트를 순서대로 실행한다. <code>--quick</code>은 느린 변화 시험을 제외한다(약 2분).</p>
+<pre class="cmd">python sim/run_all.py --quick
+python sim/run_all.py elasticity   <span class="c"># 지정한 것만</span></pre></div>
+    <div class="run"><h3>시험</h3><p>모형과 지상국의 단위시험을 각각 실행한다.</p>
+<pre class="cmd">cd sim &amp;&amp; python -m pytest -q       <span class="c"># 94건</span>
+cd ../station &amp;&amp; python -m pytest -q  <span class="c"># 58건</span></pre></div>
+    <div class="run"><h3>지상국 모니터 (시뮬레이터 입력)</h3><p>장비 없이 화면을 확인한다. 브라우저에서 127.0.0.1:8787 에 접속한다.</p>
+<pre class="cmd">python station/bridge.py --sim --area 0.67</pre></div>
+    <div class="run"><h3>가짜 장비로 전 구간 시험</h3><p>펌웨어와 같은 바이트를 TCP로 내보내는 장치를 두고 시리얼 경로를 그대로 통과시킨다.</p>
+<pre class="cmd"><span class="c"># 터미널 1</span>
+python station/fake_rig.py
+<span class="c"># 터미널 2</span>
+python station/bridge.py --serial socket://127.0.0.1:5577 --sim --area 0.67</pre></div>
+    <div class="run"><h3>실측 연결과 기록 재생</h3><p>실제 비행에서는 시리얼 포트를 지정한다. 기록한 CSV는 그대로 재생할 수 있다.</p>
+<pre class="cmd">python station/bridge.py --serial COM5 --area 0.67
+python station/bridge.py --replay station/logs/기록.csv --speed 2
+python station/export.py --open   <span class="c"># 오프라인 단일 HTML</span></pre></div>
+  </div>
+
+  <h3>실행 순서 (실측 비행)</h3>
+  <ol class="steps">
+    <li>공중 노드에 <code>firmware/payload</code>를, 지상 노드에 <code>firmware/ground</code>를 PlatformIO로 올린다. 두 노드는 <code>telemetry.h</code>의 같은 패킷 정의를 사용한다.</li>
+    <li>지상 노드를 PC에 USB로 연결하고 <code>bridge.py --serial COM5</code>를 실행한다. 연 면적은 계수의 배율이 되므로 반드시 입력한다.</li>
+    <li>브라우저에서 화면을 열어 실측과 모형 예측을 나란히 확인한다. 비행 중 기록은 <code>station/logs/</code>에 원시 행으로 쌓인다.</li>
+    <li>비행 후 <code>sim/twin.py</code>가 준정적 구간의 기록에서 양력·항력계수를 역산하여 모형을 교정한다.</li>
+  </ol>
+</section>
+
+<section id="code">
+  <div class="sec-no">05</div>
+  <h2>코드 열람</h2>
+  <p>저장소의 소스 파일 74개(약 1.5만 줄)를 이 페이지에서 바로 읽을 수 있다. 왼쪽에서 파일을 고르거나 이름으로 검색한다. 주소의 <code>#code/경로</code> 부분을 공유하면 같은 파일이 열린다.</p>
+  <div class="viewer">
+    <div class="side">
+      <input id="q" type="search" placeholder="파일 이름 검색 (예: model, bridge)" aria-label="파일 검색">
+      <div class="tree" id="tree">불러오는 중…</div>
+    </div>
+    <div class="main">
+      <div class="fhead">
+        <div class="p" id="fpath">—</div>
+        <div class="d" id="fdesc"></div>
+        <div class="m" id="fmeta"></div>
+      </div>
+      <div class="code" id="codebox"><pre><code class="hljs" id="codeel"></code></pre></div>
+    </div>
+  </div>
+</section>
+
 </div>
-<p style="margin-top:18px">결론: 연을 띄워 두는 힘은 공기력과 중력이 정하므로 줄의 탄성으로 낮출 수 없고, 줄과 연결부가 견뎌야 하는 <b>피크 하중</b>은 짧은 돌풍에서 줄일 수 있습니다. 그래서 탄성 계류줄은 윈치를 보완하는 수단이 되고, 지상국은 느린 높이 보정을 맡습니다.</p>
 
-<figure><img src="img/fig2_stiffness.png" alt="줄 강성에 따른 장력, 신장, 고유진동수"><figcaption>줄 강성 k에 따른 정상 장력(일정), 돌풍 피크 장력(감소), 신장과 고유진동수.</figcaption></figure>
-<figure><img src="img/fig3_gust.png" alt="돌풍에 대한 장력 응답"><figcaption>돌풍(6→10 m/s, 1.5초)에 대한 장력 응답: 강성이 낮을수록 피크가 낮습니다.</figcaption></figure>
-<figure><img src="img/fig4_extremes.png" alt="150회 비행의 최대 장력 분포"><figcaption>난류 비행 150회의 최대 장력 분포와 100회에 한 번 초과하는 하중.</figcaption></figure>
+<footer><div class="wrap">
+  <div>kite-twin · 방패연 계류줄 탄성 연구<br>모든 수치는 시뮬레이션 결과이며, 양력·항력계수 등 일부 입력은 실측 전의 가정값이다.</div>
+  <div><a href="https://github.com/hydrangea111/kite-twin">저장소</a> · <a href="https://dh-kite-station.web.app/">지상국 모니터 소개</a> · <a href="https://github.com/hydrangea111/kite-station/releases/latest">KiteStation 내려받기</a></div>
+</div></footer>
 
-<h2>모형</h2>
-<p>연은 2차원 점질량, 줄은 인장력만 전달하는 스프링·감쇠기로 나타냈고, 바람은 평균풍(멱법칙) + 난류 + 돌풍으로 구성했습니다.</p>
-<figure><img src="img/fig1_model.png" alt="수치 모형의 구조"><figcaption>수치 모형의 구조.</figcaption></figure>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+(function(){
+  var REPO = "https://github.com/hydrangea111/kite-twin";
+  var DATA = null, current = null;
+  var $ = function(id){ return document.getElementById(id); };
+  var DEFAULT = "sim/model.py";
 
-<h2>저장소 구성</h2>
-<table>
-<tr><th>폴더</th><th>내용</th></tr>
-<tr><td><code>sim/</code></td><td>시뮬레이션 모형, 바람, 분석 스크립트 30개와 테스트</td></tr>
-<tr><td><code>station/</code></td><td>지상국 모니터(시리얼·재생·시뮬레이션 입력, 모형 예측과 비교)</td></tr>
-<tr><td><code>firmware/</code></td><td>지상국·탑재물 ESP32 펌웨어와 파서 테스트</td></tr>
-</table>
+  // 복사 버튼
+  document.querySelectorAll("pre.cmd").forEach(function(pre){
+    var b = document.createElement("button");
+    b.className = "copy"; b.textContent = "복사"; b.type = "button";
+    b.onclick = function(){
+      var t = pre.innerText.replace(/^복사\n?/, "");
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){
+        b.textContent = "복사됨"; setTimeout(function(){ b.textContent = "복사"; }, 1200);
+      }).catch(function(){ b.textContent = "실패"; });
+    };
+    pre.appendChild(b);
+  });
 
-<h2>실행</h2>
-<pre>pip install -r requirements.txt
-python sim/run_all.py --quick
-python station/bridge.py --sim --area 0.67</pre>
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-<footer>모든 수치는 시뮬레이션 결과입니다. 양력·항력계수 등은 가정값이며 실측으로 교체할 예정입니다.</footer>
-</div>
+  // 줄 단위로 나누되, 여러 줄에 걸친 span 은 줄마다 닫고 다시 연다.
+  function splitLines(html){
+    var out = [], open = [], line = "";
+    var re = /(<span[^>]*>|<\/span>|\n)/g, last = 0, m;
+    while ((m = re.exec(html))){
+      line += html.slice(last, m.index); last = re.lastIndex;
+      var tk = m[0];
+      if (tk === "\n"){
+        line += open.map(function(){ return "</span>"; }).join("");
+        out.push(line); line = open.join("");
+      } else if (tk === "</span>"){ open.pop(); line += tk; }
+      else { open.push(tk); line += tk; }
+    }
+    line += html.slice(last);
+    out.push(line);
+    return out;
+  }
+
+  function buildTree(files){
+    var root = {};
+    files.forEach(function(p){
+      var parts = p.split("/"), n = root;
+      parts.forEach(function(seg, i){
+        if (i === parts.length - 1) { n[seg] = p; }
+        else { n[seg] = n[seg] || {}; n = n[seg]; }
+      });
+    });
+    function render(node, depth, openAll){
+      var html = "";
+      var keys = Object.keys(node).sort(function(a, b){
+        var da = typeof node[a] === "object", db = typeof node[b] === "object";
+        if (da !== db) return da ? -1 : 1;
+        return a < b ? -1 : 1;
+      });
+      keys.forEach(function(k){
+        var v = node[k];
+        if (typeof v === "string"){
+          html += '<a class="f" href="#code/' + v + '" data-p="' + v + '" title="' + esc(DATA[v].desc || v) + '">' + esc(k) + '</a>';
+        } else {
+          var open = (depth < 1 || openAll) ? " open" : "";
+          html += '<details' + open + '><summary>' + esc(k) + '</summary><div class="kids">' + render(v, depth + 1, openAll) + '</div></details>';
+        }
+      });
+      return html;
+    }
+    return render(root, 0, false);
+  }
+
+  function show(path){
+    if (!DATA || !DATA[path]) path = DEFAULT;
+    var f = DATA[path]; current = path;
+    $("fpath").textContent = path;
+    $("fdesc").textContent = f.desc || "";
+    $("fmeta").innerHTML = '<span>' + f.lines + '줄</span><span>' + f.lang + '</span>' +
+      '<a href="' + REPO + '/blob/main/' + path + '" target="_blank" rel="noopener">GitHub에서 보기</a>' +
+      '<a href="' + REPO + '/raw/main/' + path + '" target="_blank" rel="noopener">원본</a>';
+    var res;
+    try { res = f.lang === "plaintext" ? {value: esc(f.text)} : hljs.highlight(f.text, {language: f.lang, ignoreIllegals: true}); }
+    catch (e) { res = {value: esc(f.text)}; }
+    var lines = splitLines(res.value);
+    $("codeel").innerHTML = lines.map(function(l){ return '<span class="ln">' + (l || " ") + '</span>'; }).join("");
+    $("codebox").scrollTop = 0;
+    document.querySelectorAll("#tree a.f").forEach(function(a){
+      a.classList.toggle("on", a.getAttribute("data-p") === path);
+    });
+    var on = document.querySelector("#tree a.f.on");
+    if (on){ var d = on.parentNode; while (d && d.id !== "tree"){ if (d.tagName === "DETAILS") d.open = true; d = d.parentNode; } }
+  }
+
+  function route(){
+    var h = decodeURIComponent(location.hash || "");
+    if (h.indexOf("#code/") === 0){
+      show(h.slice(6));
+      var sec = $("code");
+      if (sec && !route.first) { sec.scrollIntoView(); }
+    } else if (!current && DATA) { show(DEFAULT); }
+    route.first = true;
+  }
+
+  function filter(q){
+    q = q.trim().toLowerCase();
+    var links = document.querySelectorAll("#tree a.f");
+    links.forEach(function(a){
+      var hit = !q || a.getAttribute("data-p").toLowerCase().indexOf(q) >= 0;
+      a.style.display = hit ? "" : "none";
+    });
+    document.querySelectorAll("#tree details").forEach(function(d){
+      var any = d.querySelector("a.f:not([style*='none'])");
+      d.style.display = any ? "" : "none";
+      if (q && any) d.open = true;
+    });
+  }
+
+  fetch("data/code.json").then(function(r){ return r.json(); }).then(function(d){
+    DATA = d;
+    $("tree").innerHTML = buildTree(Object.keys(d));
+    $("q").addEventListener("input", function(e){ filter(e.target.value); });
+    route.first = !(location.hash || "").startsWith("#code/") ? true : false;
+    route();
+    window.addEventListener("hashchange", route);
+  }).catch(function(){ $("tree").textContent = "코드 데이터를 불러오지 못했습니다."; });
+})();
+</script>
 </body>
 </html>

@@ -50,3 +50,8 @@ python station/bridge.py --sim --area 0.67      # http://127.0.0.1:8787/
 
 양력·항력계수와 면적·질량, 돌풍의 크기는 가정값이며 실측으로 교체해야 합니다. 모형은 2차원이므로
 좌우 운동과 자세 운동은 다루지 않습니다.
+
+## 소개 사이트의 코드 열람
+
+https://hydrangea111.github.io/kite-twin/ 에서 저장소의 소스를 바로 읽을 수 있다.
+소스를 고친 뒤에는 `python tools/build_site.py` 로 `docs/data/code.json` 을 갱신한다.
