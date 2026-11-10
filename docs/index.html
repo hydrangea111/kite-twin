@@ -129,6 +129,9 @@ text .t1.mono{font-family:var(--mono);font-size:12.5px}
 .fstep .why span{flex:1;min-width:0}
 .fstep em.fx{color:var(--blue-d);background:#dbe8fd}
 .fstep em{flex:none;font-style:normal;font-weight:700;font-size:12px;color:var(--teal);background:#dff5f1;border-radius:4px;padding:0 5px;margin-right:6px}
+.totop{position:fixed;right:18px;bottom:20px;z-index:30;width:44px;height:44px;border-radius:50%;border:0;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(15,34,56,.25)}
+.totop[hidden]{display:none}
+.totop:hover{background:var(--blue-d)}
 .prow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .dl{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid var(--blue);background:#fff;color:var(--blue-d);border-radius:7px;cursor:pointer}
 .dl:hover{background:var(--blue);color:#fff}
@@ -422,6 +425,18 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   <div><a href="https://dh-kite-station.web.app/">지상국 모니터 내려받기</a></div>
 </div></footer>
 
+<button type="button" id="totop" class="totop" aria-label="맨 위로" title="맨 위로" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V5"/><path d="M6 11l6-6 6 6"/></svg></button>
+<script>
+(function(){
+  var b = document.getElementById("totop");
+  function upd(){ b.hidden = (window.pageYOffset || document.documentElement.scrollTop) < 500; }
+  window.addEventListener("scroll", upd, {passive: true}); upd();
+  b.addEventListener("click", function(){
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    window.scrollTo({top: 0, behavior: "smooth"});
+  });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
 (function(){
