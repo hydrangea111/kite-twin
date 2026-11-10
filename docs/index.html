@@ -99,7 +99,24 @@ pre.cmd .c{color:#8fb0d6}
 .steps li:before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--blue-l);color:var(--blue-d);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
 
 /* 코드 열람기 */
-.viewer{display:grid;grid-template-columns:300px 1fr;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff;min-height:560px;margin-top:10px}
+.tabs{display:flex;gap:4px;padding:10px 10px 0;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:6px 11px;font:600 13px var(--sans);color:var(--mute);cursor:pointer}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.flowwrap{overflow:auto;padding:6px 8px 16px;flex:1}
+.flowwrap .cap{font-size:12.5px;color:var(--mute);margin:6px 4px 4px}
+.flowwrap svg{width:100%;height:auto;display:block}
+.fn{cursor:pointer;outline:none}
+.fn .sh{fill:#fff;stroke:#8fa8c4;stroke-width:1.5}
+.fn.t-start .sh,.fn.t-end .sh{fill:#e3efff;stroke:#1f6feb}
+.fn.t-dec .sh{fill:#fff7e0;stroke:#d9a400}
+.fn.t-io .sh{fill:#dff5f1;stroke:#0f9d8a}
+.fn:hover .sh,.fn:focus .sh{stroke:var(--blue);stroke-width:2.5}
+.fn.on .sh{fill:var(--blue);stroke:var(--blue-d)}
+.fn text{font:600 12.5px var(--sans);fill:#1c2b3d;pointer-events:none}
+.fn.on text{fill:#fff}
+.fl-lab{font:700 11.5px var(--sans);fill:#52657d}
+.code .ln.hl{background:#fff4c2}
+.viewer{display:grid;grid-template-columns:420px 1fr;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff;min-height:560px;margin-top:10px}
 .side{border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;max-height:760px}
 .side input{margin:10px;padding:9px 12px;border:1px solid var(--line2);border-radius:8px;font:14px var(--sans);outline:none;background:#fff}
 .side input:focus{border-color:var(--blue)}
@@ -119,7 +136,7 @@ pre.cmd .c{color:#8fb0d6}
 .fhead .d{font-size:14.5px;color:var(--mute);margin-top:3px}
 .fhead .m{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--faint);flex-wrap:wrap}
 .fhead .m a{color:var(--blue-d)}
-.code{overflow:auto;max-height:680px;background:#fff}
+.code{overflow:auto;max-height:680px;background:#fff;position:relative}
 .code pre{margin:0;padding:12px 0;font:13px/1.65 var(--mono);counter-reset:ln}
 .code .ln{display:block;padding:0 18px 0 0;white-space:pre;position:relative;padding-left:60px;min-height:1.65em}
 .code .ln:before{counter-increment:ln;content:counter(ln);position:absolute;left:0;width:46px;text-align:right;color:var(--faint);user-select:none}
@@ -195,7 +212,7 @@ footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
     <figure><img src="img/fig2_stiffness.png" alt="줄 강성에 따른 정상 장력, 피크 장력, 신장, 고유진동수"><figcaption>줄 강성 k에 따른 정상 장력(일정), 돌풍 피크 장력, 신장과 고유진동수.</figcaption></figure>
     <figure><img src="img/fig3_gust.png" alt="돌풍에 대한 장력 응답"><figcaption>돌풍(6→10 m/s, 1.5초)에 대한 장력 응답. 강성이 낮을수록 피크가 낮다.</figcaption></figure>
   </div>
-  <p class="note">모든 수치는 시뮬레이션 결과이며, 양력·항력계수와 면적·질량은 실측 전의 가정값이다.</p>
+  <p class="note">모든 수치는 시뮬레이션 결과이다.</p>
 </section>
 
 <section id="architecture">
@@ -365,11 +382,13 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
 <section id="code">
   <div class="sec-no">05</div>
   <h2>코드 열람</h2>
-  <p>저장소의 소스 파일 74개(약 1.5만 줄)를 이 페이지에서 바로 읽을 수 있다. 왼쪽에서 파일을 고르거나 이름으로 검색한다. 주소의 <code>#code/경로</code> 부분을 공유하면 같은 파일이 열린다.</p>
-  <div class="viewer">
+  <p>저장소의 소스 파일 74개(약 1.5만 줄)를 이 페이지에서 바로 읽을 수 있다. 왼쪽의 순서도에서 단계를 누르면 해당 코드의 줄로 이동하고, 「파일」 탭에서는 파일을 직접 고르거나 이름으로 검색한다. 주소의 <code>#code/경로:줄</code> 부분을 공유하면 같은 위치가 열린다.</p>
+  <div class="viewer" id="viewer">
     <div class="side">
-      <input id="q" type="search" placeholder="파일 이름 검색 (예: model, bridge)" aria-label="파일 검색">
-      <div class="tree" id="tree">불러오는 중…</div>
+      <div class="tabs" id="tabs"></div>
+      <div class="flowwrap" id="flowwrap"></div>
+      <input id="q" type="search" placeholder="파일 이름 검색 (예: model, bridge)" aria-label="파일 검색" hidden>
+      <div class="tree" id="tree" hidden>불러오는 중…</div>
     </div>
     <div class="main">
       <div class="fhead">
@@ -385,7 +404,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
 </div>
 
 <footer><div class="wrap">
-  <div>kite-twin · 방패연 계류줄 탄성 연구<br>모든 수치는 시뮬레이션 결과이며, 양력·항력계수 등 일부 입력은 실측 전의 가정값이다.</div>
+  <div>kite-twin · 방패연 계류줄 탄성 연구<br>모든 수치는 시뮬레이션 결과이다.</div>
   <div><a href="https://github.com/hydrangea111/kite-twin">저장소</a> · <a href="https://dh-kite-station.web.app/">지상국 모니터 소개</a> · <a href="https://github.com/hydrangea111/kite-station/releases/latest">KiteStation 내려받기</a></div>
 </div></footer>
 
@@ -460,8 +479,137 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     return render(root, 0, false);
   }
 
-  function show(path){
-    if (!DATA || !DATA[path]) path = DEFAULT;
+  // ---- 순서도 ----
+  var FLOWS = {
+    ground: {
+      name: "지상국", cap: "station/bridge.py — 수신한 한 행마다 한 번 실행",
+      nodes: [
+        {t:"start", s:"행 수신", p:"station/bridge.py", l:559},
+        {t:"io", s:"원시 채널 읽기\n(시리얼·재생·시뮬)", p:"station/bridge.py", l:559},
+        {t:"proc", s:"줄 신장 보정\nr = L(1 + T/EA)", p:"station/bridge.py", l:313},
+        {t:"proc", s:"처짐각 계산\nsag_angle()", p:"station/bridge.py", l:326},
+        {t:"dec", s:"처짐각\n≤ 상한?", p:"station/bridge.py", l:330,
+          side:{s:"상한으로 제한\n보정 불신 표시", p:"station/bridge.py", l:331}},
+        {t:"proc", s:"현 방향 위치\n(x, z) 계산", p:"station/bridge.py", l:332},
+        {t:"proc", s:"CL·CD 역산", p:"station/bridge.py", l:340},
+        {t:"dec", s:"준정적 표본\n이고 유효?", p:"station/bridge.py", l:344,
+          side:{s:"이 표본은\n추정에서 제외", p:"station/bridge.py", l:344}},
+        {t:"proc", s:"표본 누적\n중앙값 갱신", p:"station/bridge.py", l:346},
+        {t:"proc", s:"모형 예측과\n편차 계산", p:"station/bridge.py", l:358},
+        {t:"io", s:"프레임 발행(SSE)\n→ 브라우저", p:"station/bridge.py", l:258},
+        {t:"end", s:"다음 행으로", p:"station/bridge.py", l:306}
+      ]
+    },
+    sim: {
+      name: "시뮬레이션", cap: "sim/model.py — 비행 한 번의 적분",
+      nodes: [
+        {t:"start", s:"시뮬레이션 시작", p:"sim/model.py", l:313},
+        {t:"io", s:"입력: 연·줄·바람\n초기 상태", p:"sim/params.py", l:1},
+        {t:"proc", s:"줄 장력 T 계산\n(스프링-댐퍼)", p:"sim/model.py", l:148},
+        {t:"proc", s:"공기력 계산\n(양력·항력)", p:"sim/model.py", l:150},
+        {t:"proc", s:"줄 항력·중력 합산\n합력 구하기", p:"sim/model.py", l:154},
+        {t:"proc", s:"방향별 관성 적용\n→ 가속도", p:"sim/model.py", l:164},
+        {t:"proc", s:"Radau 적분 한 걸음\n(max_step 0.1 s)", p:"sim/model.py", l:337},
+        {t:"dec", s:"t ≥ t_end?", p:"sim/model.py", l:339,
+          side:{s:"장력 계산으로\n되돌아감", p:"sim/model.py", l:144, loop:2}},
+        {t:"proc", s:"장력·고도각\n후처리", p:"sim/model.py", l:356},
+        {t:"io", s:"결과 반환\n(t, r, v, T, 고도각)", p:"sim/model.py", l:362},
+        {t:"end", s:"끝", p:"sim/model.py", l:362}
+      ]
+    },
+    twin: {
+      name: "계수 교정", cap: "sim/twin.py — 비행 기록에서 CL·CD 역산",
+      nodes: [
+        {t:"start", s:"비행 기록 입력", p:"sim/twin.py", l:234},
+        {t:"proc", s:"준정적 표본 선별\n(정상·장력 유지·처짐 범위)", p:"sim/twin.py", l:148},
+        {t:"dec", s:"표본 ≥ 50?", p:"sim/twin.py", l:237,
+          side:{s:"오류: 교정에\n쓸 표본 부족", p:"sim/twin.py", l:238, stop:true}},
+        {t:"proc", s:"처짐 복원 후\n힘 평형으로 역산", p:"sim/twin.py", l:204},
+        {t:"proc", s:"부트스트랩 2000회\n중앙값 반복 추출", p:"sim/twin.py", l:247},
+        {t:"io", s:"CL·CD와\n95 % 신뢰구간", p:"sim/twin.py", l:251},
+        {t:"end", s:"끝", p:"sim/twin.py", l:258}
+      ]
+    }
+  };
+  var NS = "http://www.w3.org/2000/svg";
+
+  function flowSvg(spec){
+    var W = 400, CX = 125, NW = 220, SX = 280, SW = 116, GAP = 26, y = 10, out = [], pos = [];
+    var H = {start:38, end:38, proc:54, io:54, dec:84};
+    spec.nodes.forEach(function(n){
+      var h = H[n.t]; pos.push({y:y, h:h, cy:y + h/2}); y += h + GAP;
+    });
+    var total = y - GAP + 12;
+    function lines(s, cx, cy){
+      var a = s.split("\n"), top = cy - (a.length - 1) * 8;
+      return '<text text-anchor="middle" x="' + cx + '" y="' + (top + 4.5) + '">' + a.map(function(t, i){
+        return '<tspan x="' + cx + '" dy="' + (i ? 16 : 0) + '">' + esc(t) + '</tspan>';
+      }).join("") + '</text>';
+    }
+    function shape(t, x, y0, w, h){
+      if (t === "start" || t === "end") return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="19"/>';
+      if (t === "dec") { var cx = x + w/2, cy = y0 + h/2;
+        return '<polygon class="sh" points="' + cx + ',' + y0 + ' ' + (x + w) + ',' + cy + ' ' + cx + ',' + (y0 + h) + ' ' + x + ',' + cy + '"/>'; }
+      if (t === "io") return '<polygon class="sh" points="' + (x + 14) + ',' + y0 + ' ' + (x + w) + ',' + y0 + ' ' + (x + w - 14) + ',' + (y0 + h) + ' ' + x + ',' + (y0 + h) + '"/>';
+      return '<rect class="sh" x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="6"/>';
+    }
+    function node(n, t, x, y0, w, h, side){
+      return '<g class="fn t-' + t + '" data-p="' + n.p + '" data-l="' + n.l + '" tabindex="0" role="link" aria-label="' + esc(n.s.replace(/\n/g, " ")) + '">' +
+        shape(t, x, y0, w, h) + lines(n.s, x + w/2, y0 + h/2) + '</g>';
+    }
+    spec.nodes.forEach(function(n, i){
+      var P = pos[i];
+      out.push(node(n, n.t, CX - NW/2, P.y, NW, P.h));
+      if (i < spec.nodes.length - 1){
+        out.push('<path d="M' + CX + ' ' + (P.y + P.h) + 'V' + pos[i+1].y + '" class="ar"/>');
+        if (n.t === "dec") out.push('<text class="fl-lab" x="' + (CX + 8) + '" y="' + (P.y + P.h + 17) + '">예</text>');
+      }
+      if (n.side){
+        var s = n.side, sy = P.cy - 27;
+        out.push('<path d="M' + (CX + NW/2) + ' ' + P.cy + 'H' + SX + '" class="ar"/>');
+        out.push('<text class="fl-lab" x="' + (CX + NW/2 + 6) + '" y="' + (P.cy - 6) + '">아니오</text>');
+        out.push(node(s, "proc", SX, sy, SW, 54));
+        if (s.loop !== undefined){
+          var tc = pos[s.loop].cy;
+          out.push('<path d="M' + (SX + SW/2) + ' ' + sy + 'V' + tc + 'H' + (CX + NW/2) + '" class="ar"/>');
+        } else if (!s.stop && i < spec.nodes.length - 1){
+          out.push('<path d="M' + (SX + SW/2) + ' ' + (sy + 54) + 'V' + pos[i+1].cy + 'H' + (CX + NW/2) + '" class="ar"/>');
+        }
+      }
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + total + '" role="img" aria-label="' + spec.name + ' 순서도">' +
+      '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b84a3"/></marker></defs>' +
+      '<style>.ar{fill:none;stroke:#6b84a3;stroke-width:1.6;marker-end:url(#ah)}</style>' + out.join("") + '</svg>';
+  }
+
+  function buildTabs(){
+    var tabs = $("tabs"), html = "";
+    Object.keys(FLOWS).forEach(function(k){ html += '<button type="button" data-tab="' + k + '">순서도 · ' + FLOWS[k].name + '</button>'; });
+    html += '<button type="button" data-tab="files">파일</button>';
+    tabs.innerHTML = html;
+    tabs.addEventListener("click", function(e){
+      var b = e.target.closest("button"); if (b) tab(b.getAttribute("data-tab"));
+    });
+    var fw = $("flowwrap");
+    fw.innerHTML = Object.keys(FLOWS).map(function(k){
+      return '<div data-flow="' + k + '" hidden><div class="cap">' + FLOWS[k].cap + '</div>' + flowSvg(FLOWS[k]) + '</div>';
+    }).join("");
+    function go(g){ if (g) location.hash = "#code/" + g.getAttribute("data-p") + ":" + g.getAttribute("data-l"); }
+    fw.addEventListener("click", function(e){ go(e.target.closest(".fn")); });
+    fw.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ var g = e.target.closest(".fn"); if (g){ e.preventDefault(); go(g); } }
+    });
+  }
+
+  function tab(k){
+    document.querySelectorAll("#tabs button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-tab") === k); });
+    var files = k === "files";
+    $("flowwrap").hidden = files; $("q").hidden = !files; $("tree").hidden = !files;
+    document.querySelectorAll("#flowwrap [data-flow]").forEach(function(d){ d.hidden = d.getAttribute("data-flow") !== k; });
+  }
+
+  function show(path, line){
+    if (!DATA || !DATA[path]) { path = DEFAULT; line = 0; }
     var f = DATA[path]; current = path;
     $("fpath").textContent = path;
     $("fdesc").textContent = f.desc || "";
@@ -474,6 +622,23 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
     var lines = splitLines(res.value);
     $("codeel").innerHTML = lines.map(function(l){ return '<span class="ln">' + (l || " ") + '</span>'; }).join("");
     $("codebox").scrollTop = 0;
+    var kids = $("codeel").children;
+    if (line > 0 && kids[line - 1]){
+      var from = kids[line - 1];
+      for (var i = line - 1; i < Math.min(line + 3, kids.length); i++) kids[i].classList.add("hl");
+      var cb = $("codebox");
+      cb.scrollTop = Math.max(0, from.offsetTop - 70);
+    }
+    if (line > 0 && !$("flowwrap").hidden){
+      var hit = null;
+      Object.keys(FLOWS).forEach(function(k){
+        FLOWS[k].nodes.forEach(function(n){ if (n.p === path && n.l === line && !hit) hit = k; });
+      });
+      if (hit) tab(hit);
+    }
+    document.querySelectorAll("#flowwrap .fn").forEach(function(g){
+      g.classList.toggle("on", g.getAttribute("data-p") === path && +g.getAttribute("data-l") === line);
+    });
     document.querySelectorAll("#tree a.f").forEach(function(a){
       a.classList.toggle("on", a.getAttribute("data-p") === path);
     });
@@ -484,9 +649,10 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
   function route(){
     var h = decodeURIComponent(location.hash || "");
     if (h.indexOf("#code/") === 0){
-      show(h.slice(6));
-      var sec = $("code");
-      if (sec && !route.first) { sec.scrollIntoView(); }
+      var spec = h.slice(6), m = /^(.*):(\d+)$/.exec(spec);
+      show(m ? m[1] : spec, m ? +m[2] : 0);
+      var sec = $("viewer");
+      if (sec && !route.first) { sec.scrollIntoView({block: "start"}); }
     } else if (!current && DATA) { show(DEFAULT); }
     route.first = true;
   }
@@ -507,6 +673,7 @@ python station/export.py --open   <span class="c"># 오프라인 단일 HTML</sp
 
   fetch("data/code.json").then(function(r){ return r.json(); }).then(function(d){
     DATA = d;
+    buildTabs(); tab("ground");
     $("tree").innerHTML = buildTree(Object.keys(d));
     $("q").addEventListener("input", function(e){ filter(e.target.value); });
     route.first = !(location.hash || "").startsWith("#code/") ? true : false;
